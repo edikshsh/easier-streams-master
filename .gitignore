@@ -1,0 +1,5 @@
+/node_modules
+/package-tests
+/dist
+/*.rar
+/easier-streams
