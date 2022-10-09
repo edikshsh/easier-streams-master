@@ -1,10 +1,11 @@
 import { TransformOptions } from "stream";
+import { TypedTransform } from "../types/typed-transform";
 import { TypedTransformCallback } from "../types/typed-transform-callback";
 import { BaseTransform } from "./base-transform";
 
 export type TransformFunction<TSource, TDestination> = (item: TSource) => TDestination;
 
-export class SimpleTransform<TSource, TDestination> extends BaseTransform<TSource, TDestination>{
+export class SimpleTransform<TSource, TDestination> extends BaseTransform<TSource, TDestination> implements TypedTransform<TSource, TDestination>{
 
     constructor(private transformer: TransformFunction<TSource, TDestination | undefined>, options?: TransformOptions) {
         super(options);

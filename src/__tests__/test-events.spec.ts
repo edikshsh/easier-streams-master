@@ -1,8 +1,3 @@
-// on(event: "data", listener: (chunk: any) => void): this;
-// on(event: "end", listener: () => void): this;
-// on(event: "error", listener: (err: Error) => void): this;
-
-import { EventEmitter } from "stream";
 import { TypedEventEmitter } from "../emitters/Emitter"
 
 type StreamPipeEvents<T> = {
@@ -36,11 +31,9 @@ describe('TypedEventEmitter', () => {
         //Adding a dummy error handler because node passes all "error" events to process unless there is a listener.
         ee.on('error', () => undefined);
     
-        debugger;
         setTimeout(() =>  ee.emit('data', 12), 10);
         setTimeout(() => ee.emit('error', Error('asdf12123')), 20);
         await expect(promise).resolves.toBe(12);
-        debugger;
     })
 })
 

@@ -1,13 +1,10 @@
 import cloneDeep from "lodash.clonedeep";
 import { TransformOptions } from "stream";
-import { SimpleAsyncTransform } from "./simple-async-transform";
-import { SimpleTransform } from "./simple-transform";
+import { AsyncTransformFunction, SimpleAsyncTransform } from "./simple-async-transform";
+import { SimpleTransform, TransformFunction } from "./simple-transform";
+import { TypedPassThrough } from "./TypedPassThrough";
 import { ArrayJoinTransform } from "./utility-transforms/array-join-transform";
 import { ArraySplitTransform } from "./utility-transforms/array-split-transform";
-
-type PassedFunctionOptions = {
-    shouldBeAwaited: boolean;
-}
 
 export class UtilityTransforms {
     constructor(private defaultTrasformOptions?: TransformOptions) { }
@@ -21,32 +18,31 @@ export class UtilityTransforms {
         return new ArrayJoinTransform<TSource>(length, finalOptions);
     }
 
-    arraySplit<TSource extends any[]>(options?: TransformOptions) {
+    arraySplit<TSource>(options?: TransformOptions) {
         const finalOptions = this.mergeOptions(options);
-        return new ArraySplitTransform<TSource>(finalOptions);
+        return new ArraySplitTransform<TSource[]>(finalOptions);
     }
 
-    // When we pass an async function, we sometimes want to wait for it to finish, and sometimes to push to an array and wait with promise.all
-    // Sometimes we can pass a regular function that returns a promise, so we dont know 100% when to wait
-    callOnData<TSource>(functionToCallOnData: (data: TSource) => (void | Promise<void>),
-     options?: { transformOptions?: TransformOptions; functionOptions?: PassedFunctionOptions }) {
-        const finalOptions = this.mergeOptions(options?.transformOptions);
-        const shouldBeAwaited = options?.functionOptions?.shouldBeAwaited;
-        if (shouldBeAwaited){
-            const callOnData = async (data: TSource) => {
-                const dataCopy = cloneDeep(data);
-                await functionToCallOnData(dataCopy);
-                return data;
-            }
-            return new SimpleAsyncTransform(callOnData,finalOptions);
-        } else {
-            const callOnData = (data: TSource) => {
-                const dataCopy = cloneDeep(data);
-                functionToCallOnData(dataCopy);
-                return data;
-            }
-            return new SimpleTransform(callOnData,finalOptions);
+    callOnDataSync<TSource>(functionToCallOnData: (data: TSource) => void,
+        options?: TransformOptions) {
+        const finalOptions = this.mergeOptions(options);
+        const callOnData = (data: TSource) => {
+            const dataCopy = cloneDeep(data);
+            functionToCallOnData(dataCopy);
+            return data;
         }
+        return new SimpleTransform(callOnData, finalOptions);
+    }
+
+    callOnDataAsync<TSource>(functionToCallOnData: (data: TSource) => Promise<void>,
+        options?: TransformOptions) {
+        const finalOptions = this.mergeOptions(options);
+        const callOnData = async (data: TSource) => {
+            const dataCopy = cloneDeep(data);
+            await functionToCallOnData(dataCopy);
+            return data;
+        }
+        return new SimpleAsyncTransform(callOnData, finalOptions);
     }
 
     void<TSource>(options?: TransformOptions) {
@@ -66,15 +62,21 @@ export class UtilityTransforms {
         return new SimpleTransform<TSource, TSource>(filter, finalOptions);
     }
 
-    fromFunction<TSource, TDestination>(...[transformer , options]: ConstructorParameters<typeof SimpleTransform<TSource, TDestination>>){
+    fromFunction<TSource, TDestination>(transformer: TransformFunction<TSource, TDestination | undefined>, options?: TransformOptions) {
         const finalOptions = this.mergeOptions(options);
-        return new SimpleTransform<TSource, TDestination>(transformer , finalOptions);
+        return new SimpleTransform<TSource, TDestination>(transformer, finalOptions);
     }
 
-    fromAsyncFunction<TSource, TDestination>(...[transformer , options]: ConstructorParameters<typeof SimpleAsyncTransform<TSource, TDestination>>){
+    fromAsyncFunction<TSource, TDestination>(transformer: AsyncTransformFunction<TSource, TDestination | undefined>, options?: TransformOptions) {
         const finalOptions = this.mergeOptions(options);
         return new SimpleAsyncTransform<TSource, TDestination>(transformer, finalOptions);
     }
+
+    passThrough<T>(options?: TransformOptions){
+        const finalOptions = this.mergeOptions(options);
+        return new TypedPassThrough<T>(finalOptions)
+    }
+
 }
 
 export const utilityTransforms = new UtilityTransforms();

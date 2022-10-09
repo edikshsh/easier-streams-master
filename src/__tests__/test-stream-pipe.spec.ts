@@ -2,6 +2,7 @@ import { Readable } from "stream";
 import { SimpleAsyncTransform } from "../classes/simple-async-transform";
 import { SimpleTransform } from "../classes/simple-transform";
 import { getStreamPipe } from "../classes/stream-pipe";
+import { TypedPassThrough } from "../classes/TypedPassThrough";
 import { sleep, streamEnd } from "./helpers-for-tests";
 
 describe('Stream pipe', () => {
@@ -37,7 +38,8 @@ describe('Stream pipe', () => {
     })
 
     it('should pipe async transforms', async () => {
-        const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]).pipe(new SimpleTransform((n: number) => n, { objectMode: true }));
+        const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]).pipe(new TypedPassThrough<number>({objectMode: true}));
+
         const add1 = async (n: number) => n + 1;
         const create3ElementsFrom1 = async (n: number) => {
             await sleep(100);

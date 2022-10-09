@@ -1,4 +1,4 @@
-import { Readable, Stream } from "stream";
+import { Readable } from "stream";
 import { SimpleAsyncTransform } from "../classes/simple-async-transform";
 import { SimpleTransform } from "../classes/simple-transform";
 import { ArrayJoinTransform } from "../classes/utility-transforms/array-join-transform";
@@ -9,7 +9,7 @@ describe('Test transforms', () => {
     describe('ArrayJoinTransform', () => {
         it('should join input into arrays of correct length', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6]);
-            const b = a.pipe(new ArrayJoinTransform(3, { objectMode: true }));
+            const b = a.pipe(new ArrayJoinTransform<number>(3, { objectMode: true }));
 
             const result: number[][] = [];
             b.on('data', (data: number[]) => result.push(data));
@@ -19,7 +19,7 @@ describe('Test transforms', () => {
         });
         it('should flush remaining data even if array is not full', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7]);
-            const b = a.pipe(new ArrayJoinTransform(3, { objectMode: true }));
+            const b = a.pipe(new ArrayJoinTransform<number>(3, { objectMode: true }));
 
             const result: number[][] = [];
             b.on('data', (data: number[]) => result.push(data));

@@ -1,9 +1,5 @@
-import { Readable, Stream } from "stream";
-import { SimpleAsyncTransform } from "../classes/simple-async-transform";
-import { SimpleTransform } from "../classes/simple-transform";
+import { Readable} from "stream";
 import { objectUtilityTransforms } from "../classes/utility-transforms";
-import { ArrayJoinTransform } from "../classes/utility-transforms/array-join-transform";
-import { ArraySplitTransform } from "../classes/utility-transforms/array-split-transform";
 import { streamEnd } from "./helpers-for-tests";
 
 describe('Test Utility transforms', () => {
@@ -16,12 +12,13 @@ describe('Test Utility transforms', () => {
                 item.a += 10;
                 modified.push(item);
             }
-            const sideEffectsTransform = objectUtilityTransforms.callOnData(increaseBy10);
+            const sideEffectsTransform = objectUtilityTransforms.callOnDataSync(increaseBy10);
             const b = a.pipe(sideEffectsTransform)
         
             const result: {a: number}[] = [];
             const modified: {a: number}[] = [];
             b.on('data', (data: {a: number}) => result.push(data));
+            // b.on('data')
         
             await streamEnd(b)
             expect(result).toEqual(arr);
@@ -37,12 +34,12 @@ describe('Test Utility transforms', () => {
                 item.a += 10;
                 modified.push(item);
             }
-            const sideEffectsTransform = objectUtilityTransforms.callOnData(increaseBy10, {functionOptions: {shouldBeAwaited: true}});
+            const sideEffectsTransform = objectUtilityTransforms.callOnDataAsync(increaseBy10);
             const b = a.pipe(sideEffectsTransform)
         
             const result: {a: number}[] = [];
             const modified: {a: number}[] = [];
-            b.on('data', (data: {a: number}) => result.push(data));
+            b.on('data', (data) => result.push(data));
         
             await streamEnd(b)
             expect(result).toEqual(arr);
@@ -80,7 +77,7 @@ describe('Test Utility transforms', () => {
     describe('arrayJoin', () => {
         it('should join input into arrays of correct length', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6]);
-            const b = a.pipe(objectUtilityTransforms.arrayJoin(3, { objectMode: true }));
+            const b = a.pipe(objectUtilityTransforms.arrayJoin<number>(3, { objectMode: true }));
 
             const result: number[][] = [];
             b.on('data', (data: number[]) => result.push(data));
@@ -90,7 +87,7 @@ describe('Test Utility transforms', () => {
         });
         it('should flush remaining data even if array is not full', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7]);
-            const b = a.pipe(objectUtilityTransforms.arrayJoin(3, { objectMode: true }));
+            const b = a.pipe(objectUtilityTransforms.arrayJoin<number>(3, { objectMode: true }));
 
             const result: number[][] = [];
             b.on('data', (data: number[]) => result.push(data));
@@ -103,7 +100,7 @@ describe('Test Utility transforms', () => {
     describe('arraySplit', () => {
         it('should split array correctly', async () => {
             const a = Readable.from([[1, 2, 3], [4, 5, 6], [7, 8]]);
-            const b = a.pipe(objectUtilityTransforms.arraySplit({ objectMode: true }));
+            const b = a.pipe(objectUtilityTransforms.arraySplit<number>({ objectMode: true }));
         
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
@@ -146,6 +143,20 @@ describe('Test Utility transforms', () => {
             await streamEnd(numberToStringTrasnform)
             expect(result).toEqual(['3','5','7','9'])
         });
+
+        describe('typedPassThrough', () => {
+            it('should pass items correctly', async () => {
+                const arr = [1, 2, 3, 4, 5, 6, 7, 8];
+                const a = Readable.from(arr);
+                const b = a.pipe(objectUtilityTransforms.passThrough<number>());
+            
+                const result: number[] = [];
+                b.on('data', (data: number) => result.push(data));
+            
+                await streamEnd(b);
+                expect(result).toEqual(arr);
+            });
+        })
     })
     describe('fromAsyncFunction', () => {
 

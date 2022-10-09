@@ -1,10 +1,9 @@
-import { Transform, TransformOptions } from "stream";
-import { TypedTransform } from "../types/typed-transform";
+import { TransformOptions } from "stream";
 import { TypedTransformCallback } from "../types/typed-transform-callback";
 import { BaseTransform } from "./base-transform";
 import { TransformFunction } from "./simple-transform";
 
-type AsyncTransformFunction<TSource, TDestination> = TransformFunction<TSource, Promise<TDestination>>;
+export type AsyncTransformFunction<TSource, TDestination> = TransformFunction<TSource, Promise<TDestination>>;
 
 export class SimpleAsyncTransform<TSource, TDestination> extends BaseTransform<TSource, TDestination>{
 
@@ -23,8 +22,6 @@ export class SimpleAsyncTransform<TSource, TDestination> extends BaseTransform<T
             } else {
                 callback(new Error(`${error}`));
             }
-        }
-        finally {
         }
     }
 }

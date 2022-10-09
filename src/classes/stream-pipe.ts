@@ -1,4 +1,4 @@
-import { EventEmitter, PassThrough, Readable, Transform, Writable } from "stream";
+import { Transform } from "stream";
 import { TypedEventEmitter } from "../emitters/Emitter";
 import { TypedTransform } from "../types/typed-transform";
 
@@ -60,7 +60,7 @@ export function getStreamPipe<T1, T2, T3, T4, T5, T6, T7, T8, T9>(...transforms:
 export function getStreamPipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(...transforms: TypedTransformPipe_10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>): StreamPipe<T1, T10>
 export function getStreamPipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(...transforms: TypedTransformPipe_11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>): StreamPipe<T1, T11>
 export function getStreamPipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(...transforms: TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>): StreamPipe<T1, T12>
-export function getStreamPipe(...transforms: TypedTransform<any, any>[]): StreamPipe<any, any> {
+export function getStreamPipe(...transforms: TypedTransform<unknown, unknown>[]): StreamPipe<unknown, unknown> {
     return new StreamPipe(transforms[0], transforms.slice(1, transforms.length - 1), transforms[transforms.length - 1])
 }
 

@@ -1,12 +1,13 @@
-import { TransformCallback, TransformOptions } from "stream";
+import { TransformOptions } from "stream";
+import { TypedTransformCallback } from "../types/typed-transform-callback";
 import { BaseTransform } from "./base-transform";
 
-export class TypedPassThrough<TSource, TDestination> extends BaseTransform<TSource, TDestination>{
+export class TypedPassThrough<T> extends BaseTransform<T, T>{
     constructor(options?:TransformOptions){
         super(options);
     }
 
-    _transform(chunk: any, encoding: BufferEncoding, callback: TransformCallback): void {
+    _transform(chunk: T, encoding: BufferEncoding, callback: TypedTransformCallback<T>): void {
         callback(null, chunk);
     }
 }
