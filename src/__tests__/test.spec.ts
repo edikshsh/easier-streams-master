@@ -32,7 +32,7 @@ describe('Test transforms', () => {
     describe('ArraySplitTransform', () => {
         it('should split array correctly', async () => {
             const a = Readable.from([[1, 2, 3], [4, 5, 6], [7, 8]]);
-            const b = a.pipe(new ArraySplitTransform({ objectMode: true }));
+            const b = a.pipe(new ArraySplitTransform<number[]>({ objectMode: true }));
         
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));

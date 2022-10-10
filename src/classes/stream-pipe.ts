@@ -5,6 +5,7 @@ import { TypedTransform } from "../types/typed-transform";
 type StreamPipeEvents<T> = {
     data: (chunk: T) => void,
     end: () => void,
+    finish: () => void,
     close: () => void,
     error: (error: Error) => void
 }
@@ -22,6 +23,7 @@ class StreamPipe<Tsource, Tdestination> extends TypedEventEmitter<StreamPipeEven
     private pipePipelineEventsToSelf(){
         this._destination.on('close', () => this.emit('close'))
         this._destination.on('end', () => this.emit('end'))
+        this._destination.on('finish', () => this.emit('finish'))
         this._destination.on('data', (data) => this.emit('data', data))
 
         this._source.on('error', (error: Error) => this.emit('error', error))

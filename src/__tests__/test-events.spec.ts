@@ -2,6 +2,7 @@ import { TypedEventEmitter } from "../emitters/Emitter"
 
 type StreamPipeEvents<T> = {
     data: (chunk: T) => void,
+    muchData: (data :T[]) => void,
     end: () => void,
     error: (error: Error) => void
 }
@@ -14,6 +15,14 @@ describe('TypedEventEmitter', () => {
     
         ee.emit('data', 12);
         await expect(promise).resolves.toBe(12);
+    })
+    it('Should resolve correctly when emitting an array', async () => {
+        const ee = new TypedEventEmitter<StreamPipeEvents<number>>();
+
+        const promise = ee.promisifyEvents(['muchData'], [])
+        
+        ee.emit('muchData', [12, 24]);
+        await expect(promise).resolves.toEqual([12, 24]);
     })
     it('Should reject correctly', async () => {
         const ee = new TypedEventEmitter<StreamPipeEvents<number>>();
@@ -36,31 +45,3 @@ describe('TypedEventEmitter', () => {
         await expect(promise).resolves.toBe(12);
     })
 })
-
-// async function testTypedEventEmitterPromisify(){
-//     const ee = new TypedEventEmitter<StreamPipeEvents<number>>();
-
-//     const promise = ee.promisifyEvents(['data'], ['end']);
-//     const promise2 = ee.promisifyEvents(['end'], ['error']);
-    
-//     promise.then((data) => {
-//         console.log(data);
-//     }).catch((error) => {
-//         console.log(error);
-//     })
-
-//     promise2.catch((error: Error) => {
-//         console.log(`caught error ${error.name}`);
-        
-//         console.log(error);
-//     });
-//     ee.emit('data', 12);
-//     ee.emit('error', Error('asdf'));
-
-//     await Promise.all([promise, promise2]).catch((e) => undefined);
-//     ee.emit('end');
-//     console.log('done');
-    
-// }
-    
-// testTypedEventEmitterPromisify();

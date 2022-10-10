@@ -1,4 +1,4 @@
-export type EventFunction = (...args: any[]) => void
+export type EventFunction = (arg: any) => void
 export type GenericEventItem = [event: string, func: EventFunction]
 export type EventItem<Str extends string, Func extends EventFunction> = [event: Str, func: Func]
 export type EventItemEvent<EE extends GenericEventItem> = EE extends [infer R, unknown] ? R : unknown

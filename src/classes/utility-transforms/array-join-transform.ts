@@ -1,5 +1,4 @@
-import { Transform, TransformCallback, TransformOptions } from "stream";
-import { TypedTransform } from "../../types/typed-transform";
+import { TransformCallback, TransformOptions } from "stream";
 import { TypedTransformCallback } from "../../types/typed-transform-callback";
 import { BaseTransform } from "../base-transform";
 
