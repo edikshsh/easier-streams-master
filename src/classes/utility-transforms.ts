@@ -1,5 +1,6 @@
 import cloneDeep from "lodash.clonedeep";
 import { TransformOptions } from "stream";
+import { streamsManyToOneController } from "./concurrent-stream-output-ender";
 import { AsyncTransformFunction, SimpleAsyncTransform } from "./simple-async-transform";
 import { SimpleTransform, TransformFunction } from "./simple-transform";
 import { TypedPassThrough } from "./TypedPassThrough";
@@ -72,9 +73,36 @@ export class UtilityTransforms {
         return new SimpleAsyncTransform<TSource, TDestination>(transformer, finalOptions);
     }
 
-    passThrough<T>(options?: TransformOptions){
+    passThrough<T>(options?: TransformOptions) {
         const finalOptions = this.mergeOptions(options);
         return new TypedPassThrough<T>(finalOptions)
+    }
+
+    pickElementFromArray<T>(index: number, options?: TransformOptions) {
+        const finalOptions = this.mergeOptions(options);
+        return this.fromFunction((arr: T[]) => arr[index], finalOptions)
+    }
+
+    fromFunctionConcurrent<TSource, TDestination>(transformer: AsyncTransformFunction<TSource, TDestination | undefined>, concurrency: number, options?: TransformOptions) {
+        const finalOptions = this.mergeOptions(options);
+
+        const input = this.passThrough<TSource>(finalOptions)
+        const toArray = this.arrayJoin(concurrency, finalOptions);
+        const pickFromArrayLayer = [...Array(concurrency).keys()].map((a) => this.pickElementFromArray<TSource[]>(a, finalOptions))
+        const actionLayer = [...Array(concurrency).keys()].map(() => this.fromAsyncFunction(transformer), finalOptions);
+        const output = this.passThrough<number>(finalOptions)
+        streamsManyToOneController(actionLayer, output);
+
+        input.pipe(toArray);
+        pickFromArrayLayer.forEach(picker => toArray.pipe(picker));
+        actionLayer.forEach((action, index) => pickFromArrayLayer[index].pipe(action))
+        actionLayer.forEach(action => {
+            action.pipe(output, { end: false });
+            action.on('error', (error) => output.emit('error', error));
+        });
+
+
+        return { input, output }
     }
 
 }
