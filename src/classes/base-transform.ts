@@ -54,8 +54,4 @@ export class BaseTransform<TSource, TDestination> extends Transform implements T
     once(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
         return super.once(eventName, listener);
     }
-
-    pipeTransform<TTargetDestination>(transform: BaseTransform<TDestination, TTargetDestination>):BaseTransform<TDestination, TTargetDestination>{
-        return this.pipe(transform)
-    }
 }

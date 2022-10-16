@@ -85,29 +85,18 @@ class PipeHelper {
         if (errorStream) {
             this.pipeErrors(srcTransforms, errorStream);
             const filters = srcTransforms.map(transform => transform.pipe(objectUtilityTransforms.filter(filterOutStreamError(errorStream.id))));
-            // streamsManyToOneController(filters, destTransform);
             filters.forEach(filter => filter.pipe(destTransform))
         } else {
-            // const abortController = new AbortController();
-            // const signal = abortController.signal;
             srcTransforms.forEach(srcTransform => srcTransform.pipe(destTransform, { end: false }));
-            // streamsManyToOneController(srcTransforms, destTransform);
-            srcTransforms.forEach((source, index) => {
-                const otherSources = [...srcTransforms.slice(0, index), ...srcTransforms.slice(index + 1, srcTransforms.length)];
-                source.on('error', (error) => {
-                    debugger;
-                    otherSources.forEach(otherSource => otherSource.destroy())
-                })
-            });
+            this.abortTransformArrayIfOneFails(srcTransforms);
         }
         streamsManyToOneController(srcTransforms, destTransform);
-        // srcTransforms.forEach(srcTransform => srcTransform.on('error', (error) => destTransform.emit('error', error)));
         return { source: srcTransforms, destination: destTransform };
     }
 
     pipeManyToMany<A, B, C>(srcTransforms: TypedTransform<A, B>[], destTransforms: TypedTransform<B, C>[], options?: ErrorTransformOptions<A>) {
         if (srcTransforms.length !== destTransforms.length) {
-            throw new Error(`pipeManyToMany: cant make connection ${srcTransforms.length} to ${destTransforms.length}`)
+            throw new Error(`pipeManyToMany: can't make connection ${srcTransforms.length} to ${destTransforms.length}`)
         }
         const errorStream = options?.errorStream
         if (errorStream) {
@@ -116,8 +105,19 @@ class PipeHelper {
             filters.forEach((filter, index) => filter.pipe(destTransforms[index]))
         } else {
             srcTransforms.forEach((srcTransform, index) => srcTransform.pipe(destTransforms[index]));
+            this.abortTransformArrayIfOneFails(srcTransforms);
         }
         return { source: srcTransforms, destination: destTransforms };
+    }
+
+    private abortTransformArrayIfOneFails(transforms: TypedTransform<unknown, unknown>[]){
+        if(transforms.length === 1){
+            return;
+        }
+        transforms.forEach((source, index) => {
+            const otherSources = [...transforms.slice(0, index), ...transforms.slice(index + 1, transforms.length)];
+            source.on('error', (error) => otherSources.forEach(otherSource => otherSource.destroy()))
+        });
     }
 
     pipeErrors<TSource, TDestination>(sources: TypedTransform<TSource, TDestination>[], errorTransform: ErrorTransform<TSource>) {

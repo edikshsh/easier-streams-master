@@ -1,26 +1,11 @@
 import { Readable } from "stream";
 import { SimpleAsyncTransform } from "../classes/simple-async-transform";
 import { SimpleTransform } from "../classes/simple-transform";
-import { TypedPassThrough } from "../classes/TypedPassThrough";
 import { ArrayJoinTransform } from "../classes/utility-transforms/array-join-transform";
 import { ArraySplitTransform } from "../classes/utility-transforms/array-split-transform";
 import { streamEnd } from "./helpers-for-tests";
 
 describe('Test transforms', () => {
-    describe('BaseTransform', () => {
-        describe('pipeTransform', () => {
-            it('should pipe like regular streams', async () => {
-                const a = Readable.from([1, 2, 3, 4, 5, 6]).pipe(new TypedPassThrough<number>({ objectMode: true }));
-                const b = a.pipeTransform(new SimpleTransform(((n: number) => n + 1), {objectMode: true}));
-
-                const result: number[] = [];
-                b.on('data', (data) => result.push(data));
-
-                await streamEnd(b);
-                expect(result).toEqual([2, 3, 4, 5, 6, 7]);
-            })
-        })
-    });
     describe('ArrayJoinTransform', () => {
         it('should join input into arrays of correct length', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6]);

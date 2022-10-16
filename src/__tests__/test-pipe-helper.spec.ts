@@ -25,7 +25,6 @@ describe('pipeHelper', () => {
 
     describe('pipeOneToOne', () => {
         it('should pass data', async () => {
-            // const dest = objectUtilityTransforms.passThrough<number>();
 
             pipeHelper.pipeOneToOne(sourceTransform, destinationTransform);
 
@@ -40,7 +39,6 @@ describe('pipeHelper', () => {
 
             const errorStream = objectUtilityTransforms.errorTransform<number>();
             const source = sourceTransform.pipe(objectUtilityTransforms.fromFunction(errorOnEvenFunc, { errorStream }));
-            // const dest = objectUtilityTransforms.passThrough<number>();
             pipeHelper.pipeOneToOne(source, destinationTransform, { errorStream });
 
             const result: number[] = [];
@@ -130,61 +128,11 @@ describe('pipeHelper', () => {
 
         it('should error correctly when not piped to error stream', async () => {
 
-            const errorOn1 = (n: number) => {
-                if (n === 1) {
-                    // console.log('throwing on 1');
-                    
-                    throw Error('asdf');
-                }
-                // console.log(n);
-                return n;
-            }
-
-            // const abortController = new AbortController();
-            // const signal = abortController.signal;
-
-            // const arr = [...Array(500).keys()];
-            // const sourceTransforms = [0, 0].map((_, index) => objectUtilityTransforms.fromIterable(arr.map(a => a + (index * 500))))
-            const sources = sourceTransforms.map((sourceTransform) => sourceTransform.pipe(objectUtilityTransforms.fromFunction(errorOn1)));
-            // sources.forEach(source => source.on('error', () => {debugger;}));
-            // sources.forEach((source,index) => {
-            //     const otherSources = [...sources.slice(0, index), ...sources.slice(index + 1, sources.length)]
-            //     source.on('error', (error) => {
-            //         otherSources.forEach(otherSource => otherSource.destroy(error))
-            //     })
-            // });
-
-            // sourceTransforms.map(transform => transform.on('error', () => undefined));
-            // sources.forEach((source) => {
-            //     source.on('error', (error) => {
-            //         abortController.abort();
-            //     })
-            // })
-
-            // destinationTransform.on('error', () => {
-            //     debugger;
-            // })
-
-            // const errorStream = objectUtilityTransforms.errorTransform<number>();
-            // const destinationTransform = objectUtilityTransforms.passThrough<number>({errorStream});
+            const sources = sourceTransforms.map((sourceTransform) => sourceTransform.pipe(objectUtilityTransforms.fromFunction(errorOnEvenFunc)));
             pipeHelper.pipeManyToOne(sources, destinationTransform);
-
-            // pipeHelper.pipeOneToOne(destinationTransform, destinationTransform2, {errorStream});
-
-            // destinationTransform.on('error', (error) => {debugger})
             destinationTransform.on('data', () => undefined);
-            // errorStream.on('data', (data) => {
-            //     debugger;
-            // })
 
-            // const promise = Promise.all([destinationTransform.promisifyEvents(['end'], ['error']), ...sources.map(source => source.promisifyEvents([], ['error']))]);
-            // const promise = Promise.all([destinationTransform.promisifyEvents(['end'], ['error']), destinationTransform.promisifyEvents([], ['error'])]);
             const promise = Promise.all([destinationTransform.promisifyEvents(['end']), ...sources.map(source => source.promisifyEvents([], ['error']))]);
-            // try {
-            //     await promise;
-            // } catch (error) {
-            //     debugger;
-            // }
             await expect(promise).rejects.toThrow(new Error('asdf'));
         });
     });
@@ -278,8 +226,8 @@ describe('pipeHelper', () => {
 
         const layer1 = objectUtilityTransforms.fromFunction(errorOnInput(1), { errorStream })
         const layer2 = [0, 1].map(() => objectUtilityTransforms.fromFunction(errorOnInput(2), { errorStream }))
-        const layer3_failing = [0, 1].map(() => objectUtilityTransforms.fromFunction(errorOnInput(3, 'layer3')))
-        const layer4 = objectUtilityTransforms.fromFunction(errorOnInput(4), { errorStream })
+        const layer3_failing = [0, 1].map(() => objectUtilityTransforms.fromFunction(errorOnInput(5, 'layer3')))
+        const layer4 = objectUtilityTransforms.fromFunction(errorOnInput(3), { errorStream })
         const layer5 = objectUtilityTransforms.passThrough<number>();
 
         pipeHelper.pipe({ errorStream }, sourceTransform, layer1, layer2, layer3_failing)
@@ -292,6 +240,8 @@ describe('pipeHelper', () => {
         errorStream.on('data', (error) => errors.push(error.data));
 
         const promise = Promise.all([layer5.promisifyEvents(['end']), errorStream.promisifyEvents(['end']), ...layer3_failing.map(transform => transform.promisifyEvents(['end'], ['error']))]);
-        await expect(promise).rejects.toThrow(Error('layer3'))
+        await expect(promise).rejects.toThrow(Error('layer3'));
+        expect(result).toEqual([4,4]);
+        expect(errors).toEqual([1,2,2,3,3]);
     });
 })

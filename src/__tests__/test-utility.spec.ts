@@ -37,14 +37,12 @@ describe('Test Utility transforms', () => {
                     modified.push(item);
                 }
                 const sideEffectsTransform = objectUtilityTransforms.callOnDataSync(increaseBy10);
-                const pt = objectUtilityTransforms.passThrough<{a: number}>()//.on('error', () => undefined)
-                const b = a.pipe(sideEffectsTransform).pipe(pt);//.on('error', () => undefined).pipe(pt);
+                const pt = objectUtilityTransforms.passThrough<{a: number}>();
+                const b = a.pipe(sideEffectsTransform).pipe(pt);
 
                 const result: { a: number }[] = [];
                 const modified: { a: number }[] = [];
                 b.on('data', (data: { a: number }) => result.push(data));
-                // b.on('error', () => undefined)
-                // await expect(b.promisifyEvents(['end', 'close'], ['error'])).rejects.toThrow(Error('aaaaa'));
                 await expect(sideEffectsTransform.promisifyEvents(['end', 'close'], ['error'])).rejects.toThrow(Error('aaaaa'));
             })
         });
