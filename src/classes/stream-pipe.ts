@@ -10,6 +10,10 @@ type StreamPipeEvents<T> = {
     error: (error: Error) => void
 }
 
+/**
+ * Deprecated
+ * Use pipeHelper
+ */
 class StreamPipe<Tsource, Tdestination> extends TypedEventEmitter<StreamPipeEvents<Tdestination>> {
 
     constructor(private _source: TypedTransform<Tsource, unknown>,
@@ -52,6 +56,10 @@ class StreamPipe<Tsource, Tdestination> extends TypedEventEmitter<StreamPipeEven
     }
 }
 
+/**
+ * Deprecated.
+ * Use pipeHelper
+ */
 export function getStreamPipe<T1, T2, T3>(...transforms: TypedTransformPipe_03<T1, T2, T3>): StreamPipe<T1, T3>
 export function getStreamPipe<T1, T2, T3, T4>(...transforms: TypedTransformPipe_04<T1, T2, T3, T4>): StreamPipe<T1, T4>
 export function getStreamPipe<T1, T2, T3, T4, T5>(...transforms: TypedTransformPipe_05<T1, T2, T3, T4, T5>): StreamPipe<T1, T5>

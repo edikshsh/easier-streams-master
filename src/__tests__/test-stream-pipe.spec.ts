@@ -131,7 +131,6 @@ describe('Stream pipe', () => {
         streamPipe.destination.on('data', (data: number) => result.push(data));
     
         await streamEnd(streamPipe.destination);
-        console.log(result);
         
         expect(result).toEqual(['4','6','8','10']);
     })

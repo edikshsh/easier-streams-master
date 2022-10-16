@@ -15,7 +15,15 @@ describe('TypedEventEmitter', () => {
     
         ee.emit('data', 12);
         await expect(promise).resolves.toBe(12);
-    })
+    });
+    it('Should resolve correctly when sending event as string', async () => {
+        const ee = new TypedEventEmitter<StreamPipeEvents<number>>();
+
+        const promise = ee.promisifyEvents('data');
+    
+        ee.emit('data', 12);
+        await expect(promise).resolves.toBe(12);
+    });
     it('Should resolve correctly when emitting an array', async () => {
         const ee = new TypedEventEmitter<StreamPipeEvents<number>>();
 
@@ -28,6 +36,14 @@ describe('TypedEventEmitter', () => {
         const ee = new TypedEventEmitter<StreamPipeEvents<number>>();
 
         const promise = ee.promisifyEvents([], ['error']);
+    
+        setTimeout(() => ee.emit('error', Error('asdf')), 10);
+        await expect(promise).rejects.toThrow(Error('asdf'));
+    })
+    it('Should reject correctly when sending event as string', async () => {
+        const ee = new TypedEventEmitter<StreamPipeEvents<number>>();
+
+        const promise = ee.promisifyEvents([],'error');
     
         setTimeout(() => ee.emit('error', Error('asdf')), 10);
         await expect(promise).rejects.toThrow(Error('asdf'));

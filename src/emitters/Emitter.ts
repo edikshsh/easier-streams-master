@@ -7,9 +7,22 @@ export type PromisifyEventReturnType<Events extends IEvents, Key extends keyof E
 
 export class TypedEventEmitter<Events extends IEvents> extends EventEmitter implements IPromisifiableEvents{
 
-    promisifyEvents<Key extends keyof Events, Key2 extends keyof Events>(resolveEvents: Key[], rejectEvents?: Key2[]):PromisifyEventReturnType<Events, Key> {
-        const stringResolveEvents = resolveEvents.map(event => event.toString())
-        const stringRejectEvents = rejectEvents?.map(event => event.toString())
+    private isSingleKey<Key extends keyof Events>(keys?: Key | Key[]): keys is Key {
+        return typeof keys === 'string' || typeof keys === 'symbol'
+    }
+
+    private keysToStringArray<Key extends keyof Events>(keys?: Key | Key[]){
+        if(this.isSingleKey(keys)){
+            return [keys.toString()];
+        } else {
+            return  keys?.map(event => event.toString()) || [];
+        }
+    }
+
+    promisifyEvents<Key extends keyof Events, Key2 extends keyof Events>(resolveEvents: Key | Key[], rejectEvents?: Key2 | Key2[]):PromisifyEventReturnType<Events, Key> {
+
+        const stringResolveEvents = this.keysToStringArray(resolveEvents);
+        const stringRejectEvents = this.keysToStringArray(rejectEvents);
         return eventPromisifier._promisifyEvents(this, stringResolveEvents, stringRejectEvents) as PromisifyEventReturnType<Events, Key>
     }
 

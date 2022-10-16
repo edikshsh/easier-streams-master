@@ -17,7 +17,7 @@
     },
     "include": [
         "src/**/*.ts"
-, "package-tests/conc-streams.ts"    ],
+, "package-tests/conc-streams.ts", "tmp01.ts"    ],
     "exclude": [
         "node_modules"
     ]

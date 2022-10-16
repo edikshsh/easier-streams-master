@@ -23,7 +23,7 @@ export interface TypedTransform<TSource, TDestination> extends Transform{
 }
 
 export interface EventEmitterTypes<Events extends IEvents> {
-    promisifyEvents<Key extends keyof Events, Key2 extends keyof Events>(resolveEvents: Key[], rejectEvents?: Key2[]):PromisifyEventReturnType<Events,Key>
+    promisifyEvents<Key extends keyof Events, Key2 extends keyof Events>(resolveEvents: Key | Key[], rejectEvents?: Key2 | Key2[]):PromisifyEventReturnType<Events,Key>
 
     on<Key extends keyof Events>(eventName: Key, listener: Events[Key]): this
 

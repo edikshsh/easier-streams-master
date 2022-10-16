@@ -6,10 +6,23 @@ import { EventEmitterTypes, TransformEvents, TypedTransform } from "../types/typ
 export class BaseTransform<TSource, TDestination> extends Transform implements TypedTransform<TSource, TDestination>, EventEmitterTypes<TransformEvents<TDestination>>{
     constructor(options?: TransformOptions){
         super(options);
-
     }
-    promisifyEvents<Key extends keyof TransformEvents<TDestination>, Key2 extends keyof TransformEvents<TDestination>>(resolveEvents: Key[], rejectEvents?: Key2[]): PromisifyEventReturnType<TransformEvents<TDestination>,Key> {
-        return eventPromisifier._promisifyEvents(this, resolveEvents.map(event => event.toString()), rejectEvents?.map(event => event.toString())) as PromisifyEventReturnType<TransformEvents<TDestination>,Key>
+
+    private isSingleKey<Key extends keyof TransformEvents<TDestination>>(keys?: Key | Key[]): keys is Key {
+        return typeof keys === 'string' || typeof keys === 'symbol'
+    }
+
+    private keysToStringArray<Key extends keyof TransformEvents<TDestination>>(keys?: Key | Key[]){
+        if(this.isSingleKey(keys)){
+            return [keys.toString()];
+        } else {
+            return  keys?.map(event => event.toString()) || [];
+        }
+    }
+    
+    promisifyEvents<Key extends keyof TransformEvents<TDestination>, Key2 extends keyof TransformEvents<TDestination>>(resolveEvents: Key | Key[], rejectEvents?: Key2 | Key2[]): PromisifyEventReturnType<TransformEvents<TDestination>,Key> {
+
+        return eventPromisifier._promisifyEvents(this, this.keysToStringArray(resolveEvents),this.keysToStringArray(rejectEvents)) as PromisifyEventReturnType<TransformEvents<TDestination>,Key>
     }
 
     on<Key extends keyof TransformEvents<TDestination>>(eventName: Key, listener: TransformEvents<TDestination>[Key]): this
@@ -40,5 +53,9 @@ export class BaseTransform<TSource, TDestination> extends Transform implements T
     once<Key extends keyof TransformEvents<TDestination>>(eventName: Key, listener: TransformEvents<TDestination>[Key]): this
     once(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
         return super.once(eventName, listener);
+    }
+
+    pipeTransform<TTargetDestination>(transform: BaseTransform<TDestination, TTargetDestination>):BaseTransform<TDestination, TTargetDestination>{
+        return this.pipe(transform)
     }
 }
