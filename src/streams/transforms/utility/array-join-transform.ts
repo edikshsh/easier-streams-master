@@ -1,6 +1,7 @@
 import { TransformCallback, TransformOptions } from "stream";
-import { TypedTransformCallback } from "../../types/typed-transform-callback";
-import { BaseTransform } from "../base-transform";
+import { BaseTransform } from "../base/base-transform";
+import { TypedTransformCallback } from "../types/typed-transform-callback";
+
 
 export class ArrayJoinTransform<TSource> extends BaseTransform<TSource, TSource[]>{
 

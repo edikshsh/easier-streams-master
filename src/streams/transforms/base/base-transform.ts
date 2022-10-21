@@ -1,7 +1,10 @@
 import { Transform, TransformOptions } from "stream";
-import { PromisifyEventReturnType } from "../emitters/Emitter";
-import { eventPromisifier } from "../emitters/eventPromisifier";
-import { EventEmitterTypes, TransformEvents, TypedTransform } from "../types/typed-transform";
+import { PromisifyEventReturnType } from "../../../emitters/Emitter";
+import { EventEmitterTypes } from "../../../emitters/event-emitter-types.interface";
+import { eventPromisifier } from "../../../emitters/eventPromisifier";
+import { TransformEvents } from "../typed-transform/transform-events.type";
+import { TypedTransform } from "../typed-transform/typed-transform.interface";
+
 
 export class BaseTransform<TSource, TDestination> extends Transform implements TypedTransform<TSource, TDestination>, EventEmitterTypes<TransformEvents<TDestination>>{
     constructor(options?: TransformOptions){

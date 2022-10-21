@@ -1,6 +1,7 @@
 import { TransformOptions } from "stream";
+import { BaseTransform } from "../base/base-transform";
 import { TypedTransformCallback } from "../types/typed-transform-callback";
-import { BaseTransform } from "./base-transform";
+
 
 export class TypedPassThrough<T> extends BaseTransform<T, T>{
     constructor(options?:TransformOptions){

@@ -1,26 +1,6 @@
-import { Transform } from "stream";
-import { PromisifyEventReturnType, TupleToUnion } from "../emitters/Emitter";
-import { IEvents } from "../emitters/types";
-import { TypedTransformCallback } from "./typed-transform-callback";
+import { PromisifyEventReturnType } from "./Emitter";
+import { IEvents } from "./types";
 
-export type TransformEvents<T> = {
-    data: (chunk: T) => void,
-    end: () => void,
-    close: () => void,
-    error: (error: Error) => void,
-    pause: () => void,
-    readable: () => void,
-    resume: () => void,
-} 
-
-export interface TypedTransform<TSource, TDestination> extends Transform{
-    _transform(
-        chunk: TSource,
-        encoding: BufferEncoding,
-        callback: TypedTransformCallback<TDestination>,
-    ): void | Promise<void>;
-
-}
 
 export interface EventEmitterTypes<Events extends IEvents> {
     promisifyEvents<Key extends keyof Events, Key2 extends keyof Events>(resolveEvents: Key | Key[], rejectEvents?: Key2 | Key2[]):PromisifyEventReturnType<Events,Key>

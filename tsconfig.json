@@ -4,6 +4,7 @@
         "module": "commonjs",
         "rootDir": "src",
         "outDir": "easier-streams",
+        "stripInternal": true,
         "sourceMap": true,
         "resolveJsonModule": true,
         "lib": [

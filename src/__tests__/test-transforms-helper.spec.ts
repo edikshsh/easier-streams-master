@@ -1,6 +1,6 @@
 import { Readable } from "stream";
-import { pipeHelper } from "../classes/pipe-helper";
-import { objectUtilityTransforms } from "../classes/utility-transforms";
+import { pipeHelper } from "../streams/pipe-helper";
+import { objectTransformsHelper } from "../streams/transforms-helper";
 import { streamEnd } from "./helpers-for-tests";
 
 describe('Test Utility transforms', () => {
@@ -14,13 +14,12 @@ describe('Test Utility transforms', () => {
                     item.a += 10;
                     modified.push(item);
                 }
-                const sideEffectsTransform = objectUtilityTransforms.callOnDataSync(increaseBy10);
+                const sideEffectsTransform = objectTransformsHelper.callOnDataSync(increaseBy10);
                 const b = a.pipe(sideEffectsTransform)
 
                 const result: { a: number }[] = [];
                 const modified: { a: number }[] = [];
                 b.on('data', (data: { a: number }) => result.push(data));
-                // b.on('data')
 
                 await streamEnd(b)
                 expect(result).toEqual(arr);
@@ -36,8 +35,8 @@ describe('Test Utility transforms', () => {
                     item.a += 10;
                     modified.push(item);
                 }
-                const sideEffectsTransform = objectUtilityTransforms.callOnDataSync(increaseBy10);
-                const pt = objectUtilityTransforms.passThrough<{a: number}>();
+                const sideEffectsTransform = objectTransformsHelper.callOnDataSync(increaseBy10);
+                const pt = objectTransformsHelper.passThrough<{ a: number }>();
                 const b = a.pipe(sideEffectsTransform).pipe(pt);
 
                 const result: { a: number }[] = [];
@@ -55,13 +54,12 @@ describe('Test Utility transforms', () => {
                     item.a += 10;
                     modified.push(item);
                 }
-                const sideEffectsTransform = objectUtilityTransforms.callOnDataAsync(increaseBy10);
+                const sideEffectsTransform = objectTransformsHelper.async.callOnData(increaseBy10);
                 const b = a.pipe(sideEffectsTransform)
 
                 const result: { a: number }[] = [];
                 const modified: { a: number }[] = [];
                 b.on('data', (data: { a: number }) => result.push(data));
-                // b.on('data')
 
                 await streamEnd(b)
                 expect(result).toEqual(arr);
@@ -77,7 +75,7 @@ describe('Test Utility transforms', () => {
                     item.a += 10;
                     modified.push(item);
                 }
-                const sideEffectsTransform = objectUtilityTransforms.callOnDataAsync(increaseBy10);
+                const sideEffectsTransform = objectTransformsHelper.async.callOnData(increaseBy10);
                 const b = a.pipe(sideEffectsTransform)
 
                 const result: { a: number }[] = [];
@@ -98,7 +96,7 @@ describe('Test Utility transforms', () => {
                     item.a += 10;
                     modified.push(item);
                 }
-                const sideEffectsTransform = objectUtilityTransforms.callOnDataAsync(increaseBy10);
+                const sideEffectsTransform = objectTransformsHelper.async.callOnData(increaseBy10);
                 const b = a.pipe(sideEffectsTransform)
 
                 const result: { a: number }[] = [];
@@ -115,7 +113,7 @@ describe('Test Utility transforms', () => {
         it('should filter out correctly', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const filterOutOdds = (n: number) => (n % 2) === 0;
-            const b = a.pipe(objectUtilityTransforms.filter(filterOutOdds));
+            const b = a.pipe(objectTransformsHelper.filter(filterOutOdds));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
@@ -132,7 +130,7 @@ describe('Test Utility transforms', () => {
                 }
                 return true;
             };
-            const b = a.pipe(objectUtilityTransforms.filter(filterOutOdds));
+            const b = a.pipe(objectTransformsHelper.filter(filterOutOdds));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
@@ -142,9 +140,9 @@ describe('Test Utility transforms', () => {
         })
 
         it('should pass error if given error stream', async () => {
-            const a = objectUtilityTransforms.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
-            const errorStream = objectUtilityTransforms.errorTransform<number>();
-            const passThrough = objectUtilityTransforms.passThrough<number>();
+            const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
+            const errorStream = objectTransformsHelper.errorTransform<number>();
+            const passThrough = objectTransformsHelper.passThrough<number>();
             const filterOutOdds = (n: number) => {
                 if ((n % 2) === 1) {
                     throw Error('asdf')
@@ -152,9 +150,10 @@ describe('Test Utility transforms', () => {
                 return true;
             };
 
-            const b = objectUtilityTransforms.filter(filterOutOdds, { errorStream })
+            const b = objectTransformsHelper.filter(filterOutOdds, { errorStream })
 
-            pipeHelper.pipe({ errorStream }, a, b, passThrough);
+            pipeHelper.pipe({}, a, b);
+            pipeHelper.pipe({ errorStream }, b, passThrough);
             passThrough.on('data', () => undefined);
             const result: number[] = [];
             const errors: number[] = [];
@@ -167,10 +166,70 @@ describe('Test Utility transforms', () => {
         })
     })
 
+    describe('asyncFilter', () => {
+        it('should filter out correctly', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const filterOutOdds = async (n: number) => (n % 2) === 0;
+            const b = a.pipe(objectTransformsHelper.async.filter(filterOutOdds));
+
+            const result: number[] = [];
+            b.on('data', (data: number) => result.push(data));
+
+            await streamEnd(b)
+            expect(result).toEqual([2, 4, 6, 8]);
+        })
+
+        it('should filter out on crash', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const filterOutOdds = async (n: number) => {
+                if ((n % 2) === 1) {
+                    throw Error('asdf')
+                }
+                return true;
+            };
+            const b = a.pipe(objectTransformsHelper.async.filter(filterOutOdds));
+
+            const result: number[] = [];
+            b.on('data', (data: number) => result.push(data));
+
+            await streamEnd(b)
+            expect(result).toEqual([2, 4, 6, 8]);
+        })
+
+
+        it('should pass error if given error stream', async () => {
+            const errorStream = objectTransformsHelper.errorTransform<number>();
+            const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
+            const passThrough = objectTransformsHelper.passThrough<number>();
+            const filterOutOdds = async (n: number) => {
+                if ((n % 2) === 1) {
+                    throw Error('asdf')
+                }
+                return true;
+            };
+
+            const b = objectTransformsHelper.async.filter(filterOutOdds, { errorStream })
+            const result: number[] = [];
+            const errors: number[] = [];
+            passThrough.on('data', (data: number) => result.push(data));
+            errorStream.on('data', (error) => {
+
+                errors.push(error.data)
+            });
+            passThrough.on('data', () => undefined);
+
+            pipeHelper.pipe({ errorStream },a, b, passThrough);
+
+            await Promise.all([streamEnd(passThrough), streamEnd(errorStream)]);
+            expect(result).toEqual([2, 4, 6, 8]);
+            expect(errors).toEqual([1, 3, 5, 7]);
+        })
+    })
+
     describe('void', () => {
         it('should throw away all data', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const b = a.pipe(objectUtilityTransforms.void());
+            const b = a.pipe(objectTransformsHelper.void());
 
             const result: void[] = [];
             b.on('data', (data) => result.push(data));
@@ -183,7 +242,7 @@ describe('Test Utility transforms', () => {
     describe('arrayJoin', () => {
         it('should join input into arrays of correct length', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6]);
-            const b = a.pipe(objectUtilityTransforms.arrayJoin<number>(3, { objectMode: true }));
+            const b = a.pipe(objectTransformsHelper.arrayJoin<number>(3, { objectMode: true }));
 
             const result: number[][] = [];
             b.on('data', (data: number[]) => result.push(data));
@@ -193,7 +252,7 @@ describe('Test Utility transforms', () => {
         });
         it('should flush remaining data even if array is not full', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7]);
-            const b = a.pipe(objectUtilityTransforms.arrayJoin<number>(3, { objectMode: true }));
+            const b = a.pipe(objectTransformsHelper.arrayJoin<number>(3, { objectMode: true }));
 
             const result: number[][] = [];
             b.on('data', (data: number[]) => result.push(data));
@@ -206,7 +265,7 @@ describe('Test Utility transforms', () => {
     describe('arraySplit', () => {
         it('should split array correctly', async () => {
             const a = Readable.from([[1, 2, 3], [4, 5, 6], [7, 8]]);
-            const b = a.pipe(objectUtilityTransforms.arraySplit<number>({ objectMode: true }));
+            const b = a.pipe(objectTransformsHelper.arraySplit<number>({ objectMode: true }));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
@@ -220,7 +279,7 @@ describe('Test Utility transforms', () => {
         it('creates a typed transform from function', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const add1 = (n: number) => n + 1;
-            const add1Transform = (objectUtilityTransforms.fromFunction(add1, { objectMode: true }));
+            const add1Transform = (objectTransformsHelper.fromFunction(add1, { objectMode: true }));
 
             a.pipe(add1Transform);
 
@@ -237,9 +296,9 @@ describe('Test Utility transforms', () => {
             const filterOutOdds = (n: number) => n % 2 ? n : undefined;
             const numberToString = (n: number) => n.toString();
 
-            const add1Transform = (objectUtilityTransforms.fromFunction(add1));
-            const filterOutOddsTranform = objectUtilityTransforms.fromFunction(filterOutOdds);
-            const numberToStringTrasnform = objectUtilityTransforms.fromFunction(numberToString);
+            const add1Transform = (objectTransformsHelper.fromFunction(add1));
+            const filterOutOddsTranform = objectTransformsHelper.fromFunction(filterOutOdds);
+            const numberToStringTrasnform = objectTransformsHelper.fromFunction(numberToString);
 
             a.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
 
@@ -251,18 +310,18 @@ describe('Test Utility transforms', () => {
         });
 
         it('passes errors to error stream instead of closing if given an error stream', async () => {
-            const a = objectUtilityTransforms.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
-            const errorStream = objectUtilityTransforms.errorTransform<number>();
+            const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
+            const errorStream = objectTransformsHelper.errorTransform<number>();
             const add1WithError = (n: number) => {
                 if (n % 2 === 0) {
                     throw Error('asdf')
                 }
                 return n + 1
             };
-            const add1Transform = (objectUtilityTransforms.fromFunction(add1WithError, { errorStream }));
+            const add1Transform = (objectTransformsHelper.fromFunction(add1WithError, { errorStream }));
 
             pipeHelper.pipeOneToOne(a, add1Transform)
-            const passThrough = objectUtilityTransforms.passThrough<number>();
+            const passThrough = objectTransformsHelper.passThrough<number>();
             pipeHelper.pipeOneToOne(add1Transform, passThrough, { errorStream })
             passThrough.on('data', () => undefined);
 
@@ -277,13 +336,13 @@ describe('Test Utility transforms', () => {
         });
 
         it('doesnt pass errors to error stream if given an error stream witohut errors', async () => {
-            const a = objectUtilityTransforms.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
-            const errorStream = objectUtilityTransforms.errorTransform<number>();
+            const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
+            const errorStream = objectTransformsHelper.errorTransform<number>();
             const add1 = (n: number) => n + 1;
-            const add1Transform = (objectUtilityTransforms.fromFunction(add1, { errorStream }));
+            const add1Transform = (objectTransformsHelper.fromFunction(add1, { errorStream }));
 
             pipeHelper.pipeOneToOne(a, add1Transform, { errorStream })
-            pipeHelper.pipeOneToOne(add1Transform, objectUtilityTransforms.void(), { errorStream })
+            pipeHelper.pipeOneToOne(add1Transform, objectTransformsHelper.void(), { errorStream })
 
             const result: number[] = [];
             const errorResulst: number[] = [];
@@ -299,7 +358,7 @@ describe('Test Utility transforms', () => {
             it('should pass items correctly', async () => {
                 const arr = [1, 2, 3, 4, 5, 6, 7, 8];
                 const a = Readable.from(arr);
-                const b = a.pipe(objectUtilityTransforms.passThrough<number>());
+                const b = a.pipe(objectTransformsHelper.passThrough<number>());
 
                 const result: number[] = [];
                 b.on('data', (data: number) => result.push(data));
@@ -314,7 +373,7 @@ describe('Test Utility transforms', () => {
         it('creates a typed transform from async function', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const add1 = async (n: number) => n + 1;
-            const add1Transform = (objectUtilityTransforms.fromAsyncFunction(add1, { objectMode: true }));
+            const add1Transform = (objectTransformsHelper.async.fromFunction(add1, { objectMode: true }));
 
             a.pipe(add1Transform);
 
@@ -331,9 +390,9 @@ describe('Test Utility transforms', () => {
             const filterOutOdds = async (n: number) => n % 2 ? n : undefined;
             const numberToString = async (n: number) => n.toString();
 
-            const add1Transform = (objectUtilityTransforms.fromAsyncFunction(add1));
-            const filterOutOddsTranform = objectUtilityTransforms.fromAsyncFunction(filterOutOdds);
-            const numberToStringTrasnform = objectUtilityTransforms.fromAsyncFunction(numberToString);
+            const add1Transform = (objectTransformsHelper.async.fromFunction(add1));
+            const filterOutOddsTranform = objectTransformsHelper.async.fromFunction(filterOutOdds);
+            const numberToStringTrasnform = objectTransformsHelper.async.fromFunction(numberToString);
 
             a.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
 
@@ -353,9 +412,9 @@ describe('Test Utility transforms', () => {
             };
             const numberToString = async (n: number) => n.toString();
 
-            const add1Transform = (objectUtilityTransforms.fromAsyncFunction(add1));
-            const filterOutOddsTranform = objectUtilityTransforms.fromAsyncFunction(filterOutOdds);
-            const numberToStringTrasnform = objectUtilityTransforms.fromAsyncFunction(numberToString);
+            const add1Transform = (objectTransformsHelper.async.fromFunction(add1));
+            const filterOutOddsTranform = objectTransformsHelper.async.fromFunction(filterOutOdds);
+            const numberToStringTrasnform = objectTransformsHelper.async.fromFunction(numberToString);
 
             a.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
 
@@ -367,18 +426,18 @@ describe('Test Utility transforms', () => {
         });
 
         it('passes errors to error stream instead of closing if given an error stream', async () => {
-            const a = objectUtilityTransforms.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
-            const errorStream = objectUtilityTransforms.errorTransform<number>();
+            const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
+            const errorStream = objectTransformsHelper.errorTransform<number>();
             const add1WithError = async (n: number) => {
                 if (n % 2 === 0) {
                     throw Error('asdf')
                 }
                 return n + 1
             };
-            const add1Transform = (objectUtilityTransforms.fromAsyncFunction(add1WithError, { errorStream }));
+            const add1Transform = (objectTransformsHelper.async.fromFunction(add1WithError, { errorStream }));
 
             pipeHelper.pipeOneToOne(a, add1Transform)
-            const passThrough = objectUtilityTransforms.passThrough<number>();
+            const passThrough = objectTransformsHelper.passThrough<number>();
             pipeHelper.pipeOneToOne(add1Transform, passThrough, { errorStream })
             passThrough.on('data', () => undefined);
 
@@ -393,13 +452,13 @@ describe('Test Utility transforms', () => {
         });
 
         it('doesnt pass errors to error stream if given an error stream witohut errors', async () => {
-            const a = objectUtilityTransforms.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
-            const errorStream = objectUtilityTransforms.errorTransform<number>();
+            const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
+            const errorStream = objectTransformsHelper.errorTransform<number>();
             const add1 = async (n: number) => n + 1;
-            const add1Transform = (objectUtilityTransforms.fromAsyncFunction(add1, { errorStream }));
+            const add1Transform = (objectTransformsHelper.async.fromFunction(add1, { errorStream }));
 
             pipeHelper.pipeOneToOne(a, add1Transform, { errorStream })
-            pipeHelper.pipeOneToOne(add1Transform, objectUtilityTransforms.void(), { errorStream })
+            pipeHelper.pipeOneToOne(add1Transform, objectTransformsHelper.void(), { errorStream })
 
             const result: number[] = [];
             const errorResulst: number[] = [];
@@ -415,7 +474,7 @@ describe('Test Utility transforms', () => {
     describe('void', () => {
         it('should ignore deleted data without blocking the stream', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const b = a.pipe(objectUtilityTransforms.void({ objectMode: true }));
+            const b = a.pipe(objectTransformsHelper.void({ objectMode: true }));
 
             const result: unknown[] = [];
             b.on('data', (data) => {
@@ -430,7 +489,7 @@ describe('Test Utility transforms', () => {
     describe('pickElementFromArray', () => {
         it('should pick the correct element', async () => {
             const a = Readable.from([[1, 2, 3], [4, 5, 6], [7, 8]]);
-            const b = a.pipe(objectUtilityTransforms.pickElementFromArray<number>(0));
+            const b = a.pipe(objectTransformsHelper.pickElementFromArray<number>(0));
 
             const result: number[] = [];
             b.on('data', (data) => {
@@ -445,8 +504,8 @@ describe('Test Utility transforms', () => {
     describe('fromFunctionConcurrent', () => {
         it('should return correct but unordered output', async () => {
             const delay = 20;
-            const inputLength = 100;
-            const arr = [...Array(inputLength).keys()];
+            const inputLength = 200;
+            const arr = [...Array(inputLength).keys()].map(i => i+1);
             const expectedOutput = arr.map(n => n * 2);
             const outArr: number[] = []
             const action = async (n: number) => {
@@ -455,7 +514,7 @@ describe('Test Utility transforms', () => {
             }
             const concurrency = 5;
 
-            const { input, output } = objectUtilityTransforms.fromFunctionConcurrent(action, concurrency);
+            const { input, output } = objectTransformsHelper.async.fromFunctionConcurrent(action, concurrency);
 
             Readable.from(arr).pipe(input);
 
@@ -479,7 +538,7 @@ describe('Test Utility transforms', () => {
             }
             const concurrency = 5;
 
-            const { input, output } = objectUtilityTransforms.fromFunctionConcurrent(action, concurrency);
+            const { input, output } = objectTransformsHelper.async.fromFunctionConcurrent(action, concurrency);
 
             Readable.from(arr).pipe(input);
 
@@ -504,7 +563,7 @@ describe('Test Utility transforms', () => {
             }
             const concurrency = 5;
 
-            const { input, output } = objectUtilityTransforms.fromFunctionConcurrent(action, concurrency);
+            const { input, output } = objectTransformsHelper.async.fromFunctionConcurrent(action, concurrency);
 
             Readable.from(arr).pipe(input);
 
@@ -533,7 +592,7 @@ describe('Test Utility transforms', () => {
             }
             const concurrency = 2;
 
-            const { input, output } = objectUtilityTransforms.fromFunctionConcurrent(action, concurrency);
+            const { input, output } = objectTransformsHelper.async.fromFunctionConcurrent(action, concurrency);
 
             Readable.from(arr).pipe(input);
             input.on('data', () => chunksPassedInInput++);
@@ -552,7 +611,7 @@ describe('Test Utility transforms', () => {
     describe('fromIterable', () => {
         it('output all data from iterable', async () => {
             const arr = [1, 2, 3, 4, 5, 6, 7, 8];
-            const b = objectUtilityTransforms.fromIterable(arr);
+            const b = objectTransformsHelper.fromIterable(arr);
 
             const result: number[] = [];
             b.on('data', (data) => {
@@ -561,6 +620,25 @@ describe('Test Utility transforms', () => {
 
             await streamEnd(b);
             expect(result).toEqual(arr);
+        });
+        it('output all data from async generator', async () => {
+
+            function* asyncGenerator() {
+                let i = 1;
+                while (true) {
+                    yield i++;
+                    if (i === 9) break;
+                }
+            }
+            const b = objectTransformsHelper.fromIterable(asyncGenerator());
+
+            const result: number[] = [];
+            b.on('data', (data) => {
+                result.push(data)
+            });
+
+            await streamEnd(b);
+            expect(result).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
         });
     })
 
@@ -574,9 +652,9 @@ describe('Test Utility transforms', () => {
         };
         const numberToString = async (n: number) => n.toString();
 
-        const add1Transform = (objectUtilityTransforms.fromFunction(add1, { objectMode: true }));
-        const filterOutOddsTranform = objectUtilityTransforms.fromAsyncFunction(filterOutOdds, { objectMode: true });
-        const numberToStringTrasnform = objectUtilityTransforms.fromAsyncFunction(numberToString, { objectMode: true });
+        const add1Transform = (objectTransformsHelper.fromFunction(add1, { objectMode: true }));
+        const filterOutOddsTranform = objectTransformsHelper.async.fromFunction(filterOutOdds, { objectMode: true });
+        const numberToStringTrasnform = objectTransformsHelper.async.fromFunction(numberToString, { objectMode: true });
 
         a.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
 

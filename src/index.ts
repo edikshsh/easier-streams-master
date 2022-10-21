@@ -1,40 +1,49 @@
-import { ArraySplitTransform } from "./classes/utility-transforms/array-split-transform";
-import { ArrayJoinTransform } from "./classes/utility-transforms/array-join-transform";
-import { objectUtilityTransforms, UtilityTransforms, utilityTransforms } from "./classes/utility-transforms";
-import { SimpleAsyncTransform } from "./classes/simple-async-transform";
-import { SimpleTransform } from "./classes/simple-transform";
-import { getStreamPipe } from "./classes/stream-pipe";
+import { objectTransformsHelper, TransformsHelper, transformsHelper } from "./streams/transforms-helper";
+import { SimpleAsyncTransform } from "./streams/transforms/base/simple-async-transform";
+import { SimpleTransform } from "./streams/transforms/base/simple-transform";
+import { getStreamPipe } from "./streams/stream-pipe";
+import { pipeHelper } from "./streams/pipe-helper";
+import { BaseTransform } from './streams/transforms/base/base-transform'
+import { TypedTransform } from './streams/transforms/typed-transform/typed-transform.interface'
+import { ArrayJoinTransform } from "./streams/transforms/utility/array-join-transform";
+import { ArraySplitTransform } from "./streams/transforms/utility/array-split-transform";
+import { callOnDataAsyncTransform, callOnDataSyncTransform } from "./streams/transforms/utility/call-on-data-transforms";
+import { asyncFilterTransform, filterTransform } from "./streams/transforms/utility/filter-transforms";
+import { fromFunctionConcurrentTransform } from "./streams/transforms/utility/from-function-concurrent-transform";
+import { fromAsyncFunctionTransform, fromFunctionTransform } from "./streams/transforms/utility/from-function-transforms";
+import { fromIterable } from "./streams/transforms/utility/from-iterable-transform";
+import { pickElementFromArrayTransform } from "./streams/transforms/utility/pick-element-from-array-transform";
+import { TypedPassThrough } from "./streams/transforms/utility/typed-pass-through";
+import { TypedEventEmitter } from "./emitters/Emitter";
+import { voidInputTransform } from "./streams/transforms/utility/void-input-transform";
+import { ErrorTransform } from './streams/errors/error-transform'
+import { StreamError } from "./streams/errors/stream-error";
 
-// class _SimpleStreams {
-//     // ArraySplitTransform = ArraySplitTransform
-//     // ArrayJoinTransform = ArrayJoinTransform
-//     // utility = {
-//     //     Transform: UtilityTransforms,
-//     //     objectTransforms: objectUtilityTransforms,
-//     //     transforms: utilityTransforms
-//     // }
-//     // SimpleAsyncTransform = SimpleAsyncTransform
-//     // SimpleTransform = SimpleTransform
-//     // StreamPipe = getStreamPipe
-
-//     utility = new UtilityTransforms({});
-//     objectUtility = new UtilityTransforms({objectMode: true});
-//     Utility = UtilityTransforms
-//     StreamPipe = getStreamPipe
-// }
-
-// export const SimpleStreams = new _SimpleStreams();
-export const utility = new UtilityTransforms();
-export const objectUtility = new UtilityTransforms({objectMode: true});
-export const Utility = UtilityTransforms
-export const StreamPipe = getStreamPipe
-
-// function SimpleStreams() {
-//     return new _SimpleStreams();
-// }
-  
-// SimpleStreams.SimpleStreams = SimpleStreams;
-// SimpleStreams.default = SimpleStreams;
-// module.exports = SimpleStreams;
-
-
+const StreamPipe = getStreamPipe
+export {
+    transformsHelper,
+    objectTransformsHelper,
+    TransformsHelper,
+    pipeHelper,
+    StreamPipe,
+    SimpleTransform,
+    SimpleAsyncTransform,
+    BaseTransform,
+    TypedTransform,
+    ArrayJoinTransform,
+    ArraySplitTransform,
+    callOnDataSyncTransform,
+    callOnDataAsyncTransform,
+    filterTransform,
+    asyncFilterTransform,
+    fromFunctionConcurrentTransform,
+    fromFunctionTransform,
+    fromAsyncFunctionTransform,
+    fromIterable,
+    pickElementFromArrayTransform,
+    TypedPassThrough,
+    TypedEventEmitter,
+    voidInputTransform,
+    ErrorTransform,
+    StreamError
+}

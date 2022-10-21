@@ -1,9 +1,10 @@
 import { Transform } from "stream";
-import { TypedTransform } from "../types/typed-transform";
-import { streamsManyToOneController } from "./concurrent-stream-output-ender";
-import { ErrorTransform, filterOutStreamError, passStreamError } from "./error-stream";
-import { objectUtilityTransforms } from "./utility-transforms";
-import { ErrorTransformOptions } from "../types/error-transform-options.type";
+import { streamsManyToOneController } from "./utility/streams-many-to-one-controller";
+import { ErrorTransform } from "./errors/error-transform";
+import { objectTransformsHelper } from "./transforms-helper";
+import { ErrorTransformOptions } from "./errors/error-transform-options.type";
+import { TypedTransform } from "./transforms/typed-transform/typed-transform.interface";
+import { filterOutStreamError } from "./errors/filter-out-stream-error";
 
 type PipableTransformGroup<TSource, TDestination> = TypedTransform<TSource, TDestination> | TypedTransform<TSource, TDestination>[]
 type TypedTransformPipe_02<T1, T2> = [PipableTransformGroup<T1, T2>]
@@ -20,24 +21,24 @@ type TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> = 
 
 class PipeHelper {
 
-
-    pipe<T1, T2, T3>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_03<T1, T2, T3>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T2, T3> }
-    pipe<T1, T2, T3, T4>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_04<T1, T2, T3, T4>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T3, T4> }
-    pipe<T1, T2, T3, T4, T5>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_05<T1, T2, T3, T4, T5>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T4, T5> }
-    pipe<T1, T2, T3, T4, T5, T6>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_06<T1, T2, T3, T4, T5, T6>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T5, T6> }
-    pipe<T1, T2, T3, T4, T5, T6, T7>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_07<T1, T2, T3, T4, T5, T6, T7>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T6, T7> }
-    pipe<T1, T2, T3, T4, T5, T6, T7, T8>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_08<T1, T2, T3, T4, T5, T6, T7, T8>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T7, T8> }
-    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_09<T1, T2, T3, T4, T5, T6, T7, T8, T9>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T8, T9> }
-    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T9, T10> }
-    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T10, T11> }
-    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>): { source: PipableTransformGroup<T1, T2>, destination: PipableTransformGroup<T11, T12> }
-    pipe(options: ErrorTransformOptions<unknown>, ...transformGroups: PipableTransformGroup<unknown, unknown>[]): { source: PipableTransformGroup<unknown, unknown>, destination: PipableTransformGroup<unknown, unknown> } {
-        const source = transformGroups.shift();
+    pipe<T1, T2, T3>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_03<T1, T2, T3>): void
+    pipe<T1, T2, T3, T4>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_04<T1, T2, T3, T4>): void
+    pipe<T1, T2, T3, T4, T5>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_05<T1, T2, T3, T4, T5>): void
+    pipe<T1, T2, T3, T4, T5, T6>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_06<T1, T2, T3, T4, T5, T6>): void
+    pipe<T1, T2, T3, T4, T5, T6, T7>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_07<T1, T2, T3, T4, T5, T6, T7>): void
+    pipe<T1, T2, T3, T4, T5, T6, T7, T8>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_08<T1, T2, T3, T4, T5, T6, T7, T8>): void
+    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_09<T1, T2, T3, T4, T5, T6, T7, T8, T9>): void
+    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>): void
+    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>): void
+    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>): void 
+    pipe(options: ErrorTransformOptions<unknown>, ...transformGroups: PipableTransformGroup<unknown, unknown>[]): void {
+        const source = transformGroups[0];
         if (!source) {
             throw Error('pipe helper cannot pipe')
         }
         let previousGroup = source
-        for (const currGroup of transformGroups) {
+
+        for (const currGroup of transformGroups.slice(1)) {
             if (!previousGroup) break;
             if (previousGroup instanceof Transform) {
                 if (currGroup instanceof Transform) {
@@ -53,7 +54,6 @@ class PipeHelper {
                 }
             }
         }
-        return { source, destination: previousGroup }
     }
 
     pipeOneToOne<A, B, C>(srcTransform: TypedTransform<A, B>, destTransform: TypedTransform<B, C>, options?: ErrorTransformOptions<A>) {
@@ -61,7 +61,7 @@ class PipeHelper {
         const errorStream = options?.errorStream
         if (errorStream) {
             this.pipeErrors([srcTransform], errorStream)
-            srcTransform.pipe(objectUtilityTransforms.filter(filterOutStreamError(errorStream.id))).pipe(destTransform);
+            this.pipeData([srcTransform], destTransform);
         } else {
             srcTransform.pipe(destTransform)
         }
@@ -73,7 +73,7 @@ class PipeHelper {
         const errorStream = options?.errorStream
         if (errorStream) {
             this.pipeErrors([srcTransform], errorStream)
-            destTransforms.forEach(destination => srcTransform.pipe(objectUtilityTransforms.filter(filterOutStreamError(errorStream.id))).pipe(destination));
+            destTransforms.forEach(destination => this.pipeData([srcTransform], destination));
         } else {
             destTransforms.forEach((destination) => srcTransform.pipe(destination));
         }
@@ -84,8 +84,7 @@ class PipeHelper {
         const errorStream = options?.errorStream
         if (errorStream) {
             this.pipeErrors(srcTransforms, errorStream);
-            const filters = srcTransforms.map(transform => transform.pipe(objectUtilityTransforms.filter(filterOutStreamError(errorStream.id))));
-            filters.forEach(filter => filter.pipe(destTransform))
+            this.pipeData(srcTransforms, destTransform);
         } else {
             srcTransforms.forEach(srcTransform => srcTransform.pipe(destTransform, { end: false }));
             this.abortTransformArrayIfOneFails(srcTransforms);
@@ -101,8 +100,7 @@ class PipeHelper {
         const errorStream = options?.errorStream
         if (errorStream) {
             this.pipeErrors(srcTransforms, errorStream);
-            const filters = srcTransforms.map(transform => transform.pipe(objectUtilityTransforms.filter(filterOutStreamError(errorStream.id))));
-            filters.forEach((filter, index) => filter.pipe(destTransforms[index]))
+            srcTransforms.forEach((sourceTransform,index) => this.pipeData([sourceTransform], destTransforms[index]));
         } else {
             srcTransforms.forEach((srcTransform, index) => srcTransform.pipe(destTransforms[index]));
             this.abortTransformArrayIfOneFails(srcTransforms);
@@ -110,24 +108,28 @@ class PipeHelper {
         return { source: srcTransforms, destination: destTransforms };
     }
 
-    private abortTransformArrayIfOneFails(transforms: TypedTransform<unknown, unknown>[]){
-        if(transforms.length === 1){
+    private abortTransformArrayIfOneFails(transforms: TypedTransform<unknown, unknown>[]) {
+        if (transforms.length === 1) {
             return;
         }
         transforms.forEach((source, index) => {
             const otherSources = [...transforms.slice(0, index), ...transforms.slice(index + 1, transforms.length)];
-            source.on('error', (error) => otherSources.forEach(otherSource => otherSource.destroy()))
+            source.on('error', () => otherSources.forEach(otherSource => otherSource.destroy()))
         });
     }
 
-    pipeErrors<TSource, TDestination>(sources: TypedTransform<TSource, TDestination>[], errorTransform: ErrorTransform<TSource>) {
-        const id = errorTransform.id;
-        const filters = sources.map(source => source.pipe(objectUtilityTransforms.filter(passStreamError(id))))
+    private pipeErrors<TSource, TDestination>(sources: TypedTransform<TSource, TDestination>[], errorTransform: ErrorTransform<TSource>) {
         if (sources.length > 1) {
-            streamsManyToOneController(filters, errorTransform);
-        }
-        filters.forEach(filter => filter.pipe(errorTransform));
+            streamsManyToOneController(sources, errorTransform);
+        }        
+        sources.forEach(source => source.pipe(errorTransform, {end: false}));
+        errorTransform.pipeErrorSource(sources);
+    }
+
+    private pipeData<T1, T2, T3>(sources: TypedTransform<T1, T2>[], destination: TypedTransform<T2, T3>) {
+        sources.forEach(source => source.pipe(objectTransformsHelper.filter(filterOutStreamError())).pipe(destination));
     }
 }
+
 
 export const pipeHelper = new PipeHelper();

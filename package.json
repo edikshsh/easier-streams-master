@@ -5,13 +5,14 @@
   "main": "index.js",
   "scripts": {
     "test": "jest ./src",
+    "test2": "jest ./src/__tests__/test-transforms-helper.spec.ts",
     "tsc": "tsc",
     "config:jest": "ts-jest config:init"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "easier-streams-file": "file:./easier-streams/easier-streams-0.0.4.tgz",
+    "easier-streams-file": "file:./easier-streams/easier-streams-0.0.8.tgz",
     "lodash": "^4.17.21",
     "lodash.clonedeep": "^4.5.0",
     "npm": "^8.19.2",

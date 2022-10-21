@@ -2,8 +2,11 @@ import { EventEmitter } from "stream";
 import { eventPromisifier } from "./eventPromisifier";
 import { IPromisifiableEvents } from "./promisifiableEvents";
 import { IEvents } from "./types";
+
 export type TupleToUnion<T extends unknown[]> = T[number];
+
 export type PromisifyEventReturnType<Events extends IEvents, Key extends keyof Events> = TupleToUnion<Parameters<Events[Key]>> extends never ? Promise<void> : Promise<TupleToUnion<Parameters<Events[Key]>>>
+
 
 export class TypedEventEmitter<Events extends IEvents> extends EventEmitter implements IPromisifiableEvents{
 

@@ -1,10 +1,10 @@
 import cloneDeep from "lodash.clonedeep";
-import { TransformOptions } from "stream";
+import { StreamError } from "../../errors/stream-error";
+import { TypedTransform } from "../typed-transform/typed-transform.interface";
 import { FullTransformOptions } from "../types/full-transform-options.type";
-import { TypedTransform } from "../types/typed-transform";
 import { TypedTransformCallback } from "../types/typed-transform-callback";
 import { BaseTransform } from "./base-transform";
-import { StreamError } from "./error-stream";
+
 
 export type TransformFunction<TSource, TDestination> = (item: TSource) => TDestination;
 
@@ -24,16 +24,9 @@ export class SimpleTransform<TSource, TDestination> extends BaseTransform<TSourc
         catch (error) {
             const finalError = error instanceof Error ? error : new Error(`${error}`)
             if (this.options?.errorStream) {
-                const streamError: StreamError<TSource> = {
-                    data: chunkClone,
-                    error: finalError,
-                    id: this.options?.errorStream.id
-                }
+                const streamError = new StreamError(finalError, chunkClone);
                 return callback(null, streamError as any);
             }
-            // if(finalError.message === 'a123'){
-            //     debugger;
-            // }
             return callback(finalError);
         }
     }
