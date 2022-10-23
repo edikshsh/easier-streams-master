@@ -166,6 +166,24 @@ describe('Test Utility transforms', () => {
         })
     })
 
+    // function isNumber(n: unknown): n is number{
+    //     return typeof n === 'number'
+    // }
+
+    describe('filterType', () => {
+        it('should filter out by type correctly', async () => {
+            const a = Readable.from([1, '2', 3, '4', 5, '6', 7, '8']);
+            function isNumber(n: unknown): n is number { return typeof n === 'number' }
+            const b = a.pipe(objectTransformsHelper.typeFilter(isNumber));
+
+            const result: number[] = [];
+            b.on('data', (data: number) => result.push(data));
+
+            await streamEnd(b)
+            expect(result).toEqual([1, 3, 5, 7]);
+        })
+    })
+
     describe('asyncFilter', () => {
         it('should filter out correctly', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
@@ -218,7 +236,7 @@ describe('Test Utility transforms', () => {
             });
             passThrough.on('data', () => undefined);
 
-            pipeHelper.pipe({ errorStream },a, b, passThrough);
+            pipeHelper.pipe({ errorStream }, a, b, passThrough);
 
             await Promise.all([streamEnd(passThrough), streamEnd(errorStream)]);
             expect(result).toEqual([2, 4, 6, 8]);
@@ -368,6 +386,7 @@ describe('Test Utility transforms', () => {
             });
         })
     })
+
     describe('fromAsyncFunction', () => {
 
         it('creates a typed transform from async function', async () => {
@@ -505,7 +524,7 @@ describe('Test Utility transforms', () => {
         it('should return correct but unordered output', async () => {
             const delay = 20;
             const inputLength = 200;
-            const arr = [...Array(inputLength).keys()].map(i => i+1);
+            const arr = [...Array(inputLength).keys()].map(i => i + 1);
             const expectedOutput = arr.map(n => n * 2);
             const outArr: number[] = []
             const action = async (n: number) => {

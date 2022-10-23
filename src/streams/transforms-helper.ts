@@ -15,6 +15,7 @@ import { fromIterable } from "./transforms/utility/from-iterable-transform";
 import { TypedPassThrough } from "./transforms/utility/typed-pass-through";
 import { pickElementFromArrayTransform } from "./transforms/utility/pick-element-from-array-transform";
 import { ArrayJoinTransform } from "./transforms/utility/array-join-transform";
+import { typeFilterTransform } from "./transforms/utility/type-filter-transforms copy";
 
 
 
@@ -71,6 +72,11 @@ export class TransformsHelper extends TransformsHelperBase {
     filter<TSource>(filterFunction: (chunk: TSource) => boolean, options?: FullTransformOptions<TSource>) {
         const finalOptions = this.mergeOptions(options);
         return filterTransform<TSource>(filterFunction, finalOptions);
+    }
+
+    typeFilter<TSource, TDestination extends TSource>(filterFunction: (chunk: TSource) => chunk is TDestination, options?: FullTransformOptions<TSource>) {
+        const finalOptions = this.mergeOptions(options);
+        return typeFilterTransform(filterFunction, finalOptions);
     }
 
     fromFunction<TSource, TDestination>(transformer: TransformFunction<TSource, TDestination | undefined>, options?: FullTransformOptions<TSource>) {
