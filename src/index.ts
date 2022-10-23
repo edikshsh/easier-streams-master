@@ -9,6 +9,7 @@ import { ArrayJoinTransform } from "./streams/transforms/utility/array-join-tran
 import { ArraySplitTransform } from "./streams/transforms/utility/array-split-transform";
 import { callOnDataAsyncTransform, callOnDataSyncTransform } from "./streams/transforms/utility/call-on-data-transforms";
 import { asyncFilterTransform, filterTransform } from "./streams/transforms/utility/filter-transforms";
+import { typeFilterTransform } from "./streams/transforms/utility/type-filter-transforms";
 import { fromFunctionConcurrentTransform } from "./streams/transforms/utility/from-function-concurrent-transform";
 import { fromAsyncFunctionTransform, fromFunctionTransform } from "./streams/transforms/utility/from-function-transforms";
 import { fromIterable } from "./streams/transforms/utility/from-iterable-transform";
@@ -36,6 +37,7 @@ export {
     callOnDataAsyncTransform,
     filterTransform,
     asyncFilterTransform,
+    typeFilterTransform,
     fromFunctionConcurrentTransform,
     fromFunctionTransform,
     fromAsyncFunctionTransform,

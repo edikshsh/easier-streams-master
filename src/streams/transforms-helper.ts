@@ -15,7 +15,7 @@ import { fromIterable } from "./transforms/utility/from-iterable-transform";
 import { TypedPassThrough } from "./transforms/utility/typed-pass-through";
 import { pickElementFromArrayTransform } from "./transforms/utility/pick-element-from-array-transform";
 import { ArrayJoinTransform } from "./transforms/utility/array-join-transform";
-import { typeFilterTransform } from "./transforms/utility/type-filter-transforms copy";
+import { typeFilterTransform } from "./transforms/utility/type-filter-transforms";
 
 
 
