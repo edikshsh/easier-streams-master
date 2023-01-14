@@ -1,6 +1,5 @@
-import { StreamError } from "./stream-error";
+import { StreamError } from './stream-error';
 
-
-export function isStreamError<T>(streamError: unknown): streamError is StreamError<T>{
+export function isStreamError<T>(streamError: unknown): streamError is StreamError<T> {
     return streamError instanceof StreamError;
 }

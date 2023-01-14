@@ -1,27 +1,27 @@
-import cloneDeep from "lodash.clonedeep";
-import { Readable, TransformOptions } from "stream";
-import { FullTransformOptions } from "./transforms/types/full-transform-options.type";
-import { ErrorTransform } from "./errors/error-transform";
-import { pipeHelper } from "./pipe-helper";
-import { AsyncTransformFunction, SimpleAsyncTransform } from "./transforms/base/simple-async-transform";
-import { SimpleTransform, TransformFunction } from "./transforms/base/simple-transform";
-import { ArraySplitTransform } from "./transforms/utility/array-split-transform";
-import { callOnDataSyncTransform, callOnDataAsyncTransform } from "./transforms/utility/call-on-data-transforms";
-import { voidInputTransform } from "./transforms/utility/void-input-transform";
-import { asyncFilterTransform, filterTransform } from "./transforms/utility/filter-transforms";
-import { fromAsyncFunctionTransform, fromFunctionTransform } from "./transforms/utility/from-function-transforms";
-import { fromFunctionConcurrentTransform, fromFunctionConcurrentTransform2 } from "./transforms/utility/from-function-concurrent-transform";
-import { fromIterable } from "./transforms/utility/from-iterable-transform";
-import { TypedPassThrough } from "./transforms/utility/typed-pass-through";
-import { pickElementFromArrayTransform } from "./transforms/utility/pick-element-from-array-transform";
-import { ArrayJoinTransform } from "./transforms/utility/array-join-transform";
-import { typeFilterTransform } from "./transforms/utility/type-filter-transforms";
-
-
-
+import cloneDeep from 'lodash.clonedeep';
+import { Readable, TransformOptions } from 'stream';
+import { FullTransformOptions } from './transforms/types/full-transform-options.type';
+import { ErrorTransform } from './errors/error-transform';
+import { pipeHelper } from './pipe-helper';
+import { AsyncTransformFunction, SimpleAsyncTransform } from './transforms/base/simple-async-transform';
+import { SimpleTransform, TransformFunction } from './transforms/base/simple-transform';
+import { ArraySplitTransform } from './transforms/utility/array-split-transform';
+import { callOnDataSyncTransform, callOnDataAsyncTransform } from './transforms/utility/call-on-data-transforms';
+import { voidInputTransform } from './transforms/utility/void-input-transform';
+import { asyncFilterTransform, filterTransform } from './transforms/utility/filter-transforms';
+import { fromAsyncFunctionTransform, fromFunctionTransform } from './transforms/utility/from-function-transforms';
+import {
+    fromFunctionConcurrentTransform,
+    fromFunctionConcurrentTransform2,
+} from './transforms/utility/from-function-concurrent-transform';
+import { fromIterable } from './transforms/utility/from-iterable-transform';
+import { TypedPassThrough } from './transforms/utility/typed-pass-through';
+import { pickElementFromArrayTransform } from './transforms/utility/pick-element-from-array-transform';
+import { ArrayJoinTransform } from './transforms/utility/array-join-transform';
+import { typeFilterTransform } from './transforms/utility/type-filter-transforms';
 
 export class TransformsHelperBase {
-    constructor(private defaultTrasformOptions?: TransformOptions) { }
+    constructor(private defaultTrasformOptions?: TransformOptions) {}
 
     protected mergeOptions<T>(options?: T) {
         return Object.assign({}, this.defaultTrasformOptions, options);
@@ -31,17 +31,14 @@ export class TransformsHelperBase {
         const finalOptions = this.mergeOptions(options);
         return new ErrorTransform<T>(finalOptions);
     }
-
 }
 
-
 export class TransformsHelper extends TransformsHelperBase {
-
     readonly async: AsyncTransformsHelper;
     constructor(defaultTrasformOptions?: TransformOptions) {
         super(defaultTrasformOptions);
         this.async = new AsyncTransformsHelper(defaultTrasformOptions);
-     }
+    }
 
     arrayJoin<TSource>(length: number, options?: FullTransformOptions<TSource>) {
         const finalOptions = super.mergeOptions(options);
@@ -53,10 +50,9 @@ export class TransformsHelper extends TransformsHelperBase {
         return new ArraySplitTransform<TSource[]>(finalOptions);
     }
 
-    callOnDataSync<TSource>(functionToCallOnData: (data: TSource) => void,
-        options?: FullTransformOptions<TSource>) {
+    callOnDataSync<TSource>(functionToCallOnData: (data: TSource) => void, options?: FullTransformOptions<TSource>) {
         const finalOptions = this.mergeOptions(options);
-        return callOnDataSyncTransform<TSource>(functionToCallOnData, finalOptions)
+        return callOnDataSyncTransform<TSource>(functionToCallOnData, finalOptions);
     }
 
     void<TSource>(options?: FullTransformOptions<TSource>) {
@@ -66,7 +62,7 @@ export class TransformsHelper extends TransformsHelperBase {
 
     passThrough<T>(options?: FullTransformOptions<T>) {
         const finalOptions = this.mergeOptions(options);
-        return new TypedPassThrough<T>(finalOptions)
+        return new TypedPassThrough<T>(finalOptions);
     }
 
     filter<TSource>(filterFunction: (chunk: TSource) => boolean, options?: FullTransformOptions<TSource>) {
@@ -74,12 +70,18 @@ export class TransformsHelper extends TransformsHelperBase {
         return filterTransform<TSource>(filterFunction, finalOptions);
     }
 
-    typeFilter<TSource, TDestination extends TSource>(filterFunction: (chunk: TSource) => chunk is TDestination, options?: FullTransformOptions<TSource>) {
+    typeFilter<TSource, TDestination extends TSource>(
+        filterFunction: (chunk: TSource) => chunk is TDestination,
+        options?: FullTransformOptions<TSource>,
+    ) {
         const finalOptions = this.mergeOptions(options);
         return typeFilterTransform(filterFunction, finalOptions);
     }
 
-    fromFunction<TSource, TDestination>(transformer: TransformFunction<TSource, TDestination | undefined>, options?: FullTransformOptions<TSource>) {
+    fromFunction<TSource, TDestination>(
+        transformer: TransformFunction<TSource, TDestination | undefined>,
+        options?: FullTransformOptions<TSource>,
+    ) {
         const finalOptions = this.mergeOptions(options);
         return fromFunctionTransform<TSource, TDestination>(transformer, finalOptions);
     }
@@ -93,15 +95,15 @@ export class TransformsHelper extends TransformsHelperBase {
         const finalOptions = this.mergeOptions(options);
         return fromIterable(iterable, finalOptions);
     }
-
 }
 
-
 export class AsyncTransformsHelper extends TransformsHelperBase {
-    callOnData<TSource>(functionToCallOnData: (data: TSource) => Promise<void>,
-        options?: FullTransformOptions<TSource>) {
+    callOnData<TSource>(
+        functionToCallOnData: (data: TSource) => Promise<void>,
+        options?: FullTransformOptions<TSource>,
+    ) {
         const finalOptions = this.mergeOptions(options);
-        return callOnDataAsyncTransform<TSource>(functionToCallOnData, finalOptions)
+        return callOnDataAsyncTransform<TSource>(functionToCallOnData, finalOptions);
     }
 
     filter<TSource>(filterFunction: (chunk: TSource) => Promise<boolean>, options?: FullTransformOptions<TSource>) {
@@ -109,7 +111,10 @@ export class AsyncTransformsHelper extends TransformsHelperBase {
         return asyncFilterTransform<TSource>(filterFunction, finalOptions);
     }
 
-    fromFunction<TSource, TDestination>(transformer: AsyncTransformFunction<TSource, TDestination | undefined>, options?: FullTransformOptions<TSource>) {
+    fromFunction<TSource, TDestination>(
+        transformer: AsyncTransformFunction<TSource, TDestination | undefined>,
+        options?: FullTransformOptions<TSource>,
+    ) {
         const finalOptions = this.mergeOptions(options);
         return fromAsyncFunctionTransform<TSource, TDestination>(transformer, finalOptions);
     }
@@ -117,7 +122,8 @@ export class AsyncTransformsHelper extends TransformsHelperBase {
     fromFunctionConcurrent<TSource, TDestination>(
         transformer: AsyncTransformFunction<TSource, TDestination | undefined>,
         concurrency: number,
-        options?: FullTransformOptions<any>) {
+        options?: FullTransformOptions<any>,
+    ) {
         const finalOptions = this.mergeOptions(options);
         return fromFunctionConcurrentTransform(transformer, concurrency, finalOptions);
     }
@@ -125,7 +131,8 @@ export class AsyncTransformsHelper extends TransformsHelperBase {
     fromFunctionConcurrent2<TSource, TDestination>(
         transformer: AsyncTransformFunction<TSource, TDestination | undefined>,
         concurrency: number,
-        options?: FullTransformOptions<any>) {
+        options?: FullTransformOptions<any>,
+    ) {
         const finalOptions = this.mergeOptions(options);
         return fromFunctionConcurrentTransform2(transformer, concurrency, finalOptions);
     }
@@ -135,7 +142,6 @@ export class AsyncTransformsHelper extends TransformsHelperBase {
         return fromIterable(iterable, finalOptions);
     }
 }
-
 
 export const transformsHelper = new TransformsHelper();
 

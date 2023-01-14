@@ -1,8 +1,7 @@
-import { Transform } from "stream";
-import { TypedTransformCallback } from "../types/typed-transform-callback";
+import { Transform } from 'stream';
+import { TypedTransformCallback } from '../types/typed-transform-callback';
 
-
-export interface TypedTransform<TSource, TDestination> extends Transform{
+export interface TypedTransform<TSource, TDestination> extends Transform {
     _transform(
         chunk: TSource,
         encoding: BufferEncoding,

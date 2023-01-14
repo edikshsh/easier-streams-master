@@ -1,10 +1,8 @@
-import { TransformCallback, TransformOptions } from "stream";
-import { BaseTransform } from "../base/base-transform";
-import { TypedTransformCallback } from "../types/typed-transform-callback";
+import { TransformCallback, TransformOptions } from 'stream';
+import { BaseTransform } from '../base/base-transform';
+import { TypedTransformCallback } from '../types/typed-transform-callback';
 
-
-export class ArrayJoinTransform<TSource> extends BaseTransform<TSource, TSource[]>{
-
+export class ArrayJoinTransform<TSource> extends BaseTransform<TSource, TSource[]> {
     array: TSource[] = [];
     constructor(private length: number, options?: TransformOptions) {
         super(options);
