@@ -1,6 +1,7 @@
 import { cloneDeep } from 'lodash';
 import { EventEmitter, TransformCallback, TransformOptions } from 'stream';
 import { StreamError } from '../../errors/stream-error';
+import { getFormattedChunk } from '../../utility/get-formatted-chunk';
 import { BaseTransform } from '../base/base-transform';
 import { AsyncTransformFunction } from '../base/simple-async-transform';
 import { FullTransformOptions } from '../types/full-transform-options.type';
@@ -59,16 +60,17 @@ export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TS
 
     async worker(): Promise<boolean> {
         const item = this.getItemFromQueue();
-        const chunkClone = cloneDeep(item);
-
         if (!isTruthy(item)) {
             return false;
         }
+        const chunkClone = cloneDeep(item);
+
         try {
             this.push(await this.transformer(item));
             return true;
         } catch (error) {
             const finalError = error instanceof Error ? error : new Error(`${error}`);
+            const formattedChunk = getFormattedChunk(chunkClone, this.options);
             if (this.options?.errorStream) {
                 const streamError = new StreamError(finalError, chunkClone);
                 this.push(streamError);

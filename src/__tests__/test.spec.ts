@@ -1,4 +1,6 @@
 import { Readable } from 'stream';
+import { StreamError } from '../streams/errors/stream-error';
+import { objectTransformsHelper } from '../streams/transforms-helper';
 import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-transform';
 import { SimpleTransform } from '../streams/transforms/base/simple-transform';
 import { ArrayJoinTransform } from '../streams/transforms/utility/array-join-transform';
@@ -50,6 +52,15 @@ describe('Test transforms', () => {
     });
 
     describe('SimpleTransform', () => {
+        const errorOnInput =
+            (input: number, error = 'asdf') =>
+            (n: number) => {
+                if (input === n) {
+                    throw new Error(error);
+                }
+                return n;
+            };
+
         it('creates a typed transform from function', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const add1 = (n: number) => n + 1;
@@ -82,8 +93,35 @@ describe('Test transforms', () => {
             await streamEnd(numberToStringTrasnform);
             expect(result).toEqual(['3', '5', '7', '9']);
         });
+        it('formats chunk on errors', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const errorStream = objectTransformsHelper.errorTransform<number>(); // Just for passing errors, will not get them
+            const chunkFormatter = (chunk: number) => ({ num: chunk });
+
+            const throwingTransform = new SimpleTransform(errorOnInput(4, 'asdf'), {
+                objectMode: true,
+                errorStream,
+                chunkFormatter,
+            });
+
+            const result: StreamError<unknown> | number[] = [];
+            throwingTransform.on('data', (data) => result.push(data));
+
+            a.pipe(throwingTransform);
+
+            await streamEnd(throwingTransform);
+            expect(result).toStrictEqual([1, 2, 3, new StreamError(Error('asdf'), { num: 4 }), 5, 6, 7, 8]);
+        });
     });
     describe('SimpleAsyncTransform', () => {
+        const errorOnInput =
+        (input: number, error = 'asdf') =>
+        async (n: number) => {
+            if (input === n) {
+                throw new Error(error);
+            }
+            return n;
+        };
         it('creates a typed transform from function', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const add1 = async (n: number) => n + 1;
@@ -137,6 +175,26 @@ describe('Test transforms', () => {
 
             await streamEnd(numberToStringTrasnform);
             expect(result).toEqual(['3', '5', '7', '9']);
+        });
+
+        it('formats chunk on errors', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const errorStream = objectTransformsHelper.errorTransform<number>(); // Just for passing errors, will not get them
+            const chunkFormatter = (chunk: number) => ({ num: chunk });
+
+            const throwingTransform = new SimpleAsyncTransform(errorOnInput(4, 'asdf'), {
+                objectMode: true,
+                errorStream,
+                chunkFormatter,
+            });
+
+            const result: StreamError<unknown> | number[] = [];
+            throwingTransform.on('data', (data) => result.push(data));
+
+            a.pipe(throwingTransform);
+
+            await streamEnd(throwingTransform);
+            expect(result).toStrictEqual([1, 2, 3, new StreamError(Error('asdf'), { num: 4 }), 5, 6, 7, 8]);
         });
     });
 
