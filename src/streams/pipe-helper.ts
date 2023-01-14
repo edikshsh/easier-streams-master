@@ -1,10 +1,11 @@
-import { Transform } from "stream";
+import { pipeline, Transform } from "stream";
 import { streamsManyToOneController } from "./utility/streams-many-to-one-controller";
 import { ErrorTransform } from "./errors/error-transform";
 import { objectTransformsHelper } from "./transforms-helper";
 import { ErrorTransformOptions } from "./errors/error-transform-options.type";
 import { TypedTransform } from "./transforms/typed-transform/typed-transform.interface";
 import { filterOutStreamError } from "./errors/filter-out-stream-error";
+import { BaseTransform } from "./transforms/base/base-transform";
 
 type PipableTransformGroup<TSource, TDestination> = TypedTransform<TSource, TDestination> | TypedTransform<TSource, TDestination>[]
 
@@ -13,7 +14,7 @@ type TypedTransformPipe_v2_03<T1, T2, T3 extends T2, T4> = [...TypedTransformPip
 type TypedTransformPipe_v2_04<T1, T2, T3 extends T2, T4, T5 extends T4, T6> = [...TypedTransformPipe_v2_03<T1, T2, T3, T4>, PipableTransformGroup<T5, T6>];
 type TypedTransformPipe_v2_05<T1, T2, T3 extends T2, T4, T5 extends T4, T6, T7 extends T6, T8> = [...TypedTransformPipe_v2_04<T1, T2, T3, T4, T5, T6>, PipableTransformGroup<T7, T8>];
 
-
+function noop(...args: unknown[]) { return undefined }
 
 type TypedTransformPipe_02<T1, T2> = [PipableTransformGroup<T1, T2>]
 type TypedTransformPipe_03<T1, T2, T3> = [...TypedTransformPipe_02<T1, T2>, PipableTransformGroup<T2, T3>]
@@ -27,6 +28,7 @@ type TypedTransformPipe_10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> = [...TypedT
 type TypedTransformPipe_11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> = [...TypedTransformPipe_10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>, PipableTransformGroup<T10, T11>]
 type TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> = [...TypedTransformPipe_11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>, PipableTransformGroup<T11, T12>]
 
+
 class PipeHelper {
 
     pipe<T1, T2, T3>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_03<T1, T2, T3>): void
@@ -38,7 +40,7 @@ class PipeHelper {
     pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_09<T1, T2, T3, T4, T5, T6, T7, T8, T9>): void
     pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>): void
     pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>): void
-    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>): void 
+    pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>): void
     // pipe<T1, T2, T3 extends T2, T4>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_v2_03<T1, T2, T3, T4>): void
     // pipe<T1, T2, T3 extends T2, T4, T5 extends T4, T6>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_v2_04<T1, T2, T3, T4, T5, T6>): void
     // pipe<T1, T2, T3 extends T2, T4, T5 extends T4, T6, T7 extends T6, T8>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_v2_05<T1, T2, T3, T4, T5, T6, T7, T8>): void
@@ -74,7 +76,8 @@ class PipeHelper {
             this.pipeErrors([srcTransform], errorStream)
             this.pipeData([srcTransform], destTransform);
         } else {
-            srcTransform.pipe(destTransform)
+            // srcTransform.pipe(destTransform)
+            this.pipingFunctionLegacy(srcTransform, destTransform);
         }
         return { source: srcTransform, destination: destTransform };
     }
@@ -86,7 +89,8 @@ class PipeHelper {
             this.pipeErrors([srcTransform], errorStream)
             destTransforms.forEach(destination => this.pipeData([srcTransform], destination));
         } else {
-            destTransforms.forEach((destination) => srcTransform.pipe(destination));
+            // destTransforms.forEach((destination) => srcTransform.pipe(destination));
+            destTransforms.forEach((destination) => this.pipingFunctionLegacy(srcTransform, destination));
         }
         return { source: srcTransform, destination: destTransforms };
     }
@@ -97,7 +101,8 @@ class PipeHelper {
             this.pipeErrors(srcTransforms, errorStream);
             this.pipeData(srcTransforms, destTransform);
         } else {
-            srcTransforms.forEach(srcTransform => srcTransform.pipe(destTransform, { end: false }));
+            // srcTransforms.forEach(srcTransform => srcTransform.pipe(destTransform, { end: false }));
+            srcTransforms.forEach(srcTransform => this.pipingFunctionLegacy(srcTransform, destTransform, { end: false }));
             this.abortTransformArrayIfOneFails(srcTransforms);
         }
         streamsManyToOneController(srcTransforms, destTransform);
@@ -113,7 +118,8 @@ class PipeHelper {
             this.pipeErrors(srcTransforms, errorStream);
             srcTransforms.forEach((sourceTransform, index) => this.pipeData([sourceTransform], destTransforms[index]));
         } else {
-            srcTransforms.forEach((srcTransform, index) => srcTransform.pipe(destTransforms[index]));
+            // srcTransforms.forEach((srcTransform, index) => srcTransform.pipe(destTransforms[index]));
+            srcTransforms.forEach((srcTransform, index) => this.pipingFunctionLegacy(srcTransform, destTransforms[index]));
             this.abortTransformArrayIfOneFails(srcTransforms);
         }
         return { source: srcTransforms, destination: destTransforms };
@@ -133,13 +139,34 @@ class PipeHelper {
         if (sources.length > 1) {
             streamsManyToOneController(sources, errorTransform);
         }
-        sources.forEach(source => source.pipe(errorTransform, { end: false }));
+        // sources.forEach(source => source.pipe(errorTransform, { end: false }));
+        sources.forEach(source => this.pipingFunctionLegacy(source, errorTransform, { end: false }));
         errorTransform.pipeErrorSource(sources);
     }
 
     private pipeData<T1, T2, T3>(sources: TypedTransform<T1, T2>[], destination: TypedTransform<T2, T3>) {
-        sources.forEach(source => source.pipe(objectTransformsHelper.filter(filterOutStreamError())).pipe(destination));
+        // sources.forEach(source => source.pipe(objectTransformsHelper.filter(filterOutStreamError())).pipe(destination));
+        sources.forEach(source => {
+            const errorFilter = objectTransformsHelper.filter(filterOutStreamError()) as Transform; //TODO: fix type
+            this.pipingFunctionLegacy(source, errorFilter);
+            this.pipingFunctionLegacy(errorFilter, destination)
+
+        });
     }
+
+    private pipingFunctionLegacy<T1, T2, T3>(source: TypedTransform<T1, T2>, destination: TypedTransform<T2, T3>, options?: { end?: boolean | undefined }) {
+        return source.pipe(destination, options);
+    }
+
+    // TODO: find an alternative to the missing "end" parameter
+    // because new piping method lacks the "end" option, stream might end prematurely when connected to more than 1 stream.
+    // Example: a => async b => c, where all of them are connected to an error stream e.
+    // a ends, thus ending b and e.
+    // e will end before b, so if b throws after that, e wont catch the error.
+    private pipingFunctionNew<T1, T2, T3>(source: TypedTransform<T1, T2>, destination: TypedTransform<T2, T3>, options?: { end?: boolean | undefined }) {
+        return pipeline(source, destination, noop);
+    }
+
 }
 
 

@@ -234,7 +234,6 @@ describe('Test Utility transforms', () => {
 
                 errors.push(error.data)
             });
-            passThrough.on('data', () => undefined);
 
             pipeHelper.pipe({ errorStream }, a, b, passThrough);
 
@@ -624,6 +623,113 @@ describe('Test Utility transforms', () => {
             expect(outArr.length).toBe(0)
             await output.promisifyEvents(['end'], ['error']);
             expect(outArr.length).toBe(inputLength)
+        });
+    })
+
+    describe('fromFunctionConcurrent2', () => {
+        it('should return correct but unordered output', async () => {
+            const delay = 20;
+            const inputLength = 200;
+            const arr = [...Array(inputLength).keys()].map(i => i + 1);
+            const expectedOutput = arr.map(n => n * 2);
+            const outArr: number[] = []
+            const action = async (n: number) => {
+                await new Promise(res => setTimeout(res, delay));
+                return n * 2;
+            }
+            const concurrency = 5;
+
+            const concurrentTransform = objectTransformsHelper.async.fromFunctionConcurrent2(action, concurrency);
+
+            Readable.from(arr).pipe(concurrentTransform);
+
+            concurrentTransform.on('data', (data) => {
+                outArr.push(data);
+            });
+            await concurrentTransform.promisifyEvents(['end'], ['error']);
+            outArr.sort((a, b) => a - b);
+            expect(outArr).toEqual(expectedOutput);
+        });
+        it('should take less time then running sequentially', async () => {
+            const delay = 20;
+            const inputLength = 100;
+            const estimatedRunTimeSequential = delay * inputLength;
+            const arr = [...Array(inputLength).keys()];
+            const outArr: number[] = []
+            const startTime = Date.now();
+            const action = async (n: number) => {
+                await new Promise(res => setTimeout(res, delay));
+                return n * 2;
+            }
+            const concurrency = 5;
+
+            const concurrentTransform = objectTransformsHelper.async.fromFunctionConcurrent2(action, concurrency);
+
+            Readable.from(arr).pipe(concurrentTransform);
+
+            concurrentTransform.on('data', (data) => {
+                outArr.push(data);
+            });
+            await concurrentTransform.promisifyEvents(['end'], ['error']);
+            expect(estimatedRunTimeSequential).toBeGreaterThan(Date.now() - startTime)
+        });
+        it('should fail send error to output if one of the concurrent actions fails', async () => {
+            const delay = 20;
+            const inputLength = 100;
+            const errorOnIndex = 20;
+            const arr = [...Array(inputLength).keys()];
+            const outArr: number[] = []
+            const action = async (n: number) => {
+                if (n === errorOnIndex) {
+                    throw new Error('asdf')
+                }
+                await new Promise(res => setTimeout(res, delay));
+                return n * 2;
+            }
+            const concurrency = 5;
+
+            const concurrentTransform = objectTransformsHelper.async.fromFunctionConcurrent2(action, concurrency);
+
+            Readable.from(arr).pipe(concurrentTransform);
+
+            concurrentTransform.on('data', (data) => {
+                outArr.push(data);
+            });
+            try {
+                await concurrentTransform.promisifyEvents(['end'], ['error']);
+            } catch (error) {
+                expect(error).toEqual(new Error('asdf'))
+                expect(outArr.length).toBeLessThan(errorOnIndex);
+            } finally {
+                expect.assertions(2);
+            }
+        });
+
+        it("doesnt break backpressure", async () => {
+            const delay = 10;
+            const inputLength = 300;
+            const arr = [...Array(inputLength).keys()]
+            const outArr: number[] = []
+            let chunksPassedInInput = 0;
+            const action = async (n: number) => {
+                await new Promise(res => setTimeout(res, delay));
+                return n * 2;
+            }
+            const concurrency = 2;
+
+            const concurrentTransform = objectTransformsHelper.async.fromFunctionConcurrent2(action, concurrency);
+
+            const readable = Readable.from(arr)
+            readable.pipe(concurrentTransform);
+            readable.on('data', () => chunksPassedInInput++);
+
+            concurrentTransform.on('data', (data) => {
+                outArr.push(data);
+            });
+            await new Promise<void>((resolve, reject) => readable.on('close', resolve));
+            expect(outArr.length).toBeGreaterThan(inputLength - 50)
+            await concurrentTransform.promisifyEvents(['close'], ['error']);
+            expect(outArr.length).toBe(300)
         });
     })
 

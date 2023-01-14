@@ -2,6 +2,7 @@ import { pipeHelper } from "../../pipe-helper";
 import { AsyncTransformFunction } from "../base/simple-async-transform";
 import { FullTransformOptions } from "../types/full-transform-options.type";
 import { ArrayJoinTransform } from "./array-join-transform";
+import { ConcurrentTransform } from "./concurrent-transform";
 import { fromAsyncFunctionTransform } from "./from-function-transforms";
 import { pickElementFromArrayTransform } from "./pick-element-from-array-transform";
 import { TypedPassThrough } from "./typed-pass-through";
@@ -21,4 +22,13 @@ export function fromFunctionConcurrentTransform<TSource, TDestination>(
 
   pipeHelper.pipe(options, input, toArray, pickFromArrayLayer, actionLayer, output);
   return { input, output }
+}
+
+export function fromFunctionConcurrentTransform2<TSource, TDestination>(
+  transformer: AsyncTransformFunction<TSource, TDestination | undefined>,
+  concurrency: number,
+  options: FullTransformOptions<any> = {}) {
+
+  return new ConcurrentTransform(transformer, concurrency, options);
+
 }

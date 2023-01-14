@@ -10,7 +10,7 @@ import { callOnDataSyncTransform, callOnDataAsyncTransform } from "./transforms/
 import { voidInputTransform } from "./transforms/utility/void-input-transform";
 import { asyncFilterTransform, filterTransform } from "./transforms/utility/filter-transforms";
 import { fromAsyncFunctionTransform, fromFunctionTransform } from "./transforms/utility/from-function-transforms";
-import { fromFunctionConcurrentTransform } from "./transforms/utility/from-function-concurrent-transform";
+import { fromFunctionConcurrentTransform, fromFunctionConcurrentTransform2 } from "./transforms/utility/from-function-concurrent-transform";
 import { fromIterable } from "./transforms/utility/from-iterable-transform";
 import { TypedPassThrough } from "./transforms/utility/typed-pass-through";
 import { pickElementFromArrayTransform } from "./transforms/utility/pick-element-from-array-transform";
@@ -120,6 +120,14 @@ export class AsyncTransformsHelper extends TransformsHelperBase {
         options?: FullTransformOptions<any>) {
         const finalOptions = this.mergeOptions(options);
         return fromFunctionConcurrentTransform(transformer, concurrency, finalOptions);
+    }
+
+    fromFunctionConcurrent2<TSource, TDestination>(
+        transformer: AsyncTransformFunction<TSource, TDestination | undefined>,
+        concurrency: number,
+        options?: FullTransformOptions<any>) {
+        const finalOptions = this.mergeOptions(options);
+        return fromFunctionConcurrentTransform2(transformer, concurrency, finalOptions);
     }
 
     fromIterable<T>(iterable: AsyncIterable<T>, options?: TransformOptions) {

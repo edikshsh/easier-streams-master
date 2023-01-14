@@ -7,7 +7,7 @@ import { isStreamError } from "./is-stream-error";
 import { StreamError } from "./stream-error";
 
 
-export class ErrorTransform<TSource> extends BaseTransform<StreamError<TSource>, StreamError<TSource>> {
+export class ErrorTransform<TSource> extends BaseTransform<unknown, StreamError<TSource>> implements TypedTransform<unknown, StreamError<TSource>> {
     streamGroupControllerEventCounter : StreamGroupControllerEventCounter = {
         close: 0,
         end: 0,
@@ -18,8 +18,8 @@ export class ErrorTransform<TSource> extends BaseTransform<StreamError<TSource>,
         super(options);
     }
 
-    _transform(chunk: StreamError<TSource>, encoding: BufferEncoding, callback: TypedTransformCallback<StreamError<TSource>>) {
-        if(isStreamError(chunk)){
+    _transform(chunk: unknown, encoding: BufferEncoding, callback: TypedTransformCallback<StreamError<TSource>>) {
+        if(isStreamError<TSource>(chunk)){
             return callback(null, chunk);
         }
         return callback();
