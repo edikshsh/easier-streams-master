@@ -72,7 +72,7 @@ export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TS
             const finalError = error instanceof Error ? error : new Error(`${error}`);
             const formattedChunk = getFormattedChunk(chunkClone, this.options);
             if (this.options?.errorStream) {
-                const streamError = new StreamError(finalError, chunkClone);
+                const streamError = new StreamError(finalError, formattedChunk);
                 this.push(streamError);
             } else {
                 this.destroy(finalError);
