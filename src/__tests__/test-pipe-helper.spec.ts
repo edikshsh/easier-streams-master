@@ -241,7 +241,7 @@ describe('pipeHelper', () => {
 
         const promise = Promise.all([layer5.promisifyEvents(['end']), errorStream.promisifyEvents(['end']), ...layer3_failing.map(transform => transform.promisifyEvents(['end'], ['error']))]);
         await expect(promise).rejects.toThrow(Error('layer3'));
-        expect(result).toEqual([4,4]);
-        expect(errors).toEqual([1,2,2,3,3]);
+        expect(result).toEqual([4, 4]);
+        expect(errors).toEqual([1, 2, 2, 3, 3]);
     });
 })

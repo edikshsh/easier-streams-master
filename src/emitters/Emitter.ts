@@ -8,21 +8,20 @@ export type TupleToUnion<T extends unknown[]> = T[number];
 export type PromisifyEventReturnType<Events extends IEvents, Key extends keyof Events> = TupleToUnion<Parameters<Events[Key]>> extends never ? Promise<void> : Promise<TupleToUnion<Parameters<Events[Key]>>>
 
 
-export class TypedEventEmitter<Events extends IEvents> extends EventEmitter implements IPromisifiableEvents{
+export class TypedEventEmitter<Events extends IEvents> extends EventEmitter implements IPromisifiableEvents {
 
-    private isSingleKey<Key extends keyof Events>(keys?: Key | Key[]): keys is Key {
-        return typeof keys === 'string' || typeof keys === 'symbol'
+    private isKeyArray<Key extends keyof Events>(keys?: Key | Key[]): keys is Key[] {
+        return Array.isArray(keys);
     }
 
-    private keysToStringArray<Key extends keyof Events>(keys?: Key | Key[]){
-        if(this.isSingleKey(keys)){
-            return [keys.toString()];
-        } else {
-            return  keys?.map(event => event.toString()) || [];
-        }
+    private keysToStringArray<Key extends keyof Events>(keys?: Key | Key[]) {
+        if (this.isKeyArray(keys)) {
+            return keys?.map(event => event.toString()) || [];
+        } 
+        return keys ? [keys.toString()] : [];
     }
 
-    promisifyEvents<Key extends keyof Events, Key2 extends keyof Events>(resolveEvents: Key | Key[], rejectEvents?: Key2 | Key2[]):PromisifyEventReturnType<Events, Key> {
+    promisifyEvents<Key extends keyof Events, Key2 extends keyof Events>(resolveEvents: Key | Key[], rejectEvents?: Key2 | Key2[]): PromisifyEventReturnType<Events, Key> {
 
         const stringResolveEvents = this.keysToStringArray(resolveEvents);
         const stringRejectEvents = this.keysToStringArray(rejectEvents);
@@ -39,7 +38,7 @@ export class TypedEventEmitter<Events extends IEvents> extends EventEmitter impl
         return super.addListener(eventName, listener);
     }
 
-    emit<Key extends keyof Events>(...args:[event: Key, ...params: Parameters<Events[Key]>]): boolean
+    emit<Key extends keyof Events>(...args: [event: Key, ...params: Parameters<Events[Key]>]): boolean
     emit(eventName: string | symbol, ...args: unknown[]): boolean {
         return super.emit(eventName, ...args);
     }

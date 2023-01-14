@@ -11,16 +11,15 @@ export class BaseTransform<TSource, TDestination> extends Transform implements T
         super(options);
     }
 
-    private isSingleKey<Key extends keyof TransformEvents<TDestination>>(keys?: Key | Key[]): keys is Key {
-        return typeof keys === 'string' || typeof keys === 'symbol'
+    private isKeyArray<Key extends keyof TransformEvents<TDestination>>(keys?: Key | Key[]): keys is Key[] {
+        return Array.isArray(keys);
     }
 
     private keysToStringArray<Key extends keyof TransformEvents<TDestination>>(keys?: Key | Key[]){
-        if(this.isSingleKey(keys)){
-            return [keys.toString()];
-        } else {
-            return  keys?.map(event => event.toString()) || [];
-        }
+        if (this.isKeyArray(keys)) {
+            return keys?.map(event => event.toString()) || [];
+        } 
+        return keys ? [keys.toString()] : [];
     }
     
     promisifyEvents<Key extends keyof TransformEvents<TDestination>, Key2 extends keyof TransformEvents<TDestination>>(resolveEvents: Key | Key[], rejectEvents?: Key2 | Key2[]): PromisifyEventReturnType<TransformEvents<TDestination>,Key> {
