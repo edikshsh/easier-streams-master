@@ -12,7 +12,6 @@ function isTruthy<T>(item?: T | null): item is T {
 
 export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TSource, TDestination> {
     itemQueue: TSource[] = [];
-    outputQueue: Awaited<TDestination>[] = [];
     liveWorkers = 0;
     ee: EventEmitter = new EventEmitter();
     itemsDone = 0;
@@ -26,13 +25,13 @@ export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TS
         this.ee.setMaxListeners(concurrency + 5);
     }
 
-    async itemQueueEmptyPromise(): Promise<void> {
+    async inputQueueIsEmpty(): Promise<void> {
         this.itemQueue.length === 0
             ? await Promise.resolve()
             : await new Promise((res) => this.ee.once('itemQueueEmpty', res));
     }
 
-    async promiseQueueEmptyPromise(): Promise<void> {
+    async allWorkersFinished(): Promise<void> {
         this.liveWorkers === 0
             ? await Promise.resolve()
             : await new Promise((res) => this.ee.once('promiseQueueEmpty', res));
@@ -87,7 +86,7 @@ export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TS
             this.itemQueue.push(item);
             void this.startWorker();
         });
-        const a = await this.itemQueueEmptyPromise();
+        const a = await this.inputQueueIsEmpty();
         return a;
     }
 
@@ -117,6 +116,6 @@ export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TS
     }
 
     async onStreamEnd() {
-        return this.promiseQueueEmptyPromise();
+        return this.allWorkersFinished();
     }
 }

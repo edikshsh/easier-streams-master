@@ -1,10 +1,8 @@
-import cloneDeep from 'lodash.clonedeep';
-import { Readable, TransformOptions } from 'stream';
+import { TransformOptions } from 'stream';
 import { FullTransformOptions } from './transforms/types/full-transform-options.type';
 import { ErrorTransform } from './errors/error-transform';
-import { pipeHelper } from './pipe-helper';
-import { AsyncTransformFunction, SimpleAsyncTransform } from './transforms/base/simple-async-transform';
-import { SimpleTransform, TransformFunction } from './transforms/base/simple-transform';
+import { AsyncTransformFunction } from './transforms/base/simple-async-transform';
+import { TransformFunction } from './transforms/base/simple-transform';
 import { ArraySplitTransform } from './transforms/utility/array-split-transform';
 import { callOnDataSyncTransform, callOnDataAsyncTransform } from './transforms/utility/call-on-data-transforms';
 import { voidInputTransform } from './transforms/utility/void-input-transform';
