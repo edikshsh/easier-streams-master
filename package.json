@@ -22,7 +22,7 @@
     "@types/jest": "^27.0.6",
     "@types/lodash": "^4.14.186",
     "@types/lodash.clonedeep": "^4.5.7",
-    "@types/node": "^18.7.20",
+    "@types/node": "^18.11.18",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.39.0",
     "@typescript-eslint/parser": "^5.48.1",
