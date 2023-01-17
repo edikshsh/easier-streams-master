@@ -11,5 +11,8 @@ export async function sleep(n: number) {
 }
 
 export async function streamEnd(stream: Stream) {
-    return new Promise((res) => stream.on('close', res));
+    return new Promise((res, rej) => {
+        stream.on('close', res);
+        stream.on('error', rej);
+    });
 }

@@ -6,7 +6,7 @@ import { TransformFunction } from './transforms/base/simple-transform';
 import { ArraySplitTransform } from './transforms/utility/array-split-transform';
 import { callOnDataSyncTransform, callOnDataAsyncTransform } from './transforms/utility/call-on-data-transforms';
 import { voidInputTransform } from './transforms/utility/void-input-transform';
-import { asyncFilterTransform, filterTransform } from './transforms/utility/filter-transforms';
+import { asyncFilterTransform, FilterOptions, filterTransform } from './transforms/utility/filter-transforms';
 import { fromAsyncFunctionTransform, fromFunctionTransform } from './transforms/utility/from-function-transforms';
 import {
     fromFunctionConcurrentTransform,
@@ -63,9 +63,20 @@ export class TransformsHelper extends TransformsHelperBase {
         return new TypedPassThrough<T>(finalOptions);
     }
 
-    filter<TSource>(filterFunction: (chunk: TSource) => boolean, options?: FullTransformOptions<TSource>) {
+    filter<TSource>(filterFunction: (chunk: TSource) => boolean, options?: FullTransformOptions<TSource> & FilterOptions) {
         const finalOptions = this.mergeOptions(options);
         return filterTransform<TSource>(filterFunction, finalOptions);
+    }
+
+    fork<TSource>(filterFunction: (chunk: TSource) => boolean, options?: FullTransformOptions<TSource>) {
+        const finalOptions = this.mergeOptions(options);
+        const filterTrueTransform = filterTransform<TSource>(filterFunction, finalOptions);
+        const filterFalseTransform = filterTransform<TSource>((chunk: TSource) => !filterFunction(chunk), finalOptions);
+
+        return {
+            filterTrueTransform,
+            filterFalseTransform,
+        };
     }
 
     typeFilter<TSource, TDestination extends TSource>(
@@ -104,9 +115,20 @@ export class AsyncTransformsHelper extends TransformsHelperBase {
         return callOnDataAsyncTransform<TSource>(functionToCallOnData, finalOptions);
     }
 
-    filter<TSource>(filterFunction: (chunk: TSource) => Promise<boolean>, options?: FullTransformOptions<TSource>) {
+    filter<TSource>(filterFunction: (chunk: TSource) => Promise<boolean>, options?: FullTransformOptions<TSource> & FilterOptions) {
         const finalOptions = this.mergeOptions(options);
         return asyncFilterTransform<TSource>(filterFunction, finalOptions);
+    }
+
+    fork<TSource>(filterFunction: (chunk: TSource) => Promise<boolean>, options?: FullTransformOptions<TSource>) {
+        const finalOptions = this.mergeOptions(options);
+        const filterTrueTransform = asyncFilterTransform<TSource>(filterFunction, finalOptions);
+        const filterFalseTransform = asyncFilterTransform<TSource>(async (chunk: TSource) => !(await filterFunction(chunk)), finalOptions);
+
+        return {
+            filterTrueTransform,
+            filterFalseTransform,
+        };
     }
 
     fromFunction<TSource, TDestination>(

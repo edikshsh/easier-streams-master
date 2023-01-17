@@ -138,7 +138,7 @@ describe('Test Utility transforms', () => {
             expect(result).toEqual([2, 4, 6, 8]);
         });
 
-        it('should filter out on crash', async () => {
+        it('should filter out on crash when considerErrorAsFilterOut is true', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const filterOutOdds = (n: number) => {
                 if (n % 2 === 1) {
@@ -146,13 +146,31 @@ describe('Test Utility transforms', () => {
                 }
                 return true;
             };
-            const b = a.pipe(objectTransformsHelper.filter(filterOutOdds));
+            const b = a.pipe(objectTransformsHelper.filter(filterOutOdds, {considerErrorAsFilterOut: true}));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
 
             await streamEnd(b);
             expect(result).toEqual([2, 4, 6, 8]);
+        });
+
+        it('should crash on error when considerErrorAsFilterOut is false', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const filterOutOdds = (n: number) => {
+                if (n % 2 === 0) {
+                    throw Error('asdf');
+                }
+                return true;
+            };
+            const b = a.pipe(objectTransformsHelper.filter(filterOutOdds, {considerErrorAsFilterOut: false}));
+
+            const result: number[] = [];
+            b.on('data', (data: number) => result.push(data));
+
+            const streamPromise = streamEnd(b);
+            await expect(streamPromise).rejects.toThrow('asdf')
+            expect(result).toEqual([1]);
         });
 
         it('should pass error if given error stream', async () => {
@@ -179,6 +197,25 @@ describe('Test Utility transforms', () => {
             await Promise.all([streamEnd(b), streamEnd(errorStream)]);
             expect(result).toEqual([2, 4, 6, 8]);
             expect(errors).toEqual([1, 3, 5, 7]);
+        });
+    });
+
+    describe('fork', () => {
+        it('should pass kept values to one stream, and discard values to another', async () => {
+            const keptValues: number[] = [];
+            const filteredValues: number[] = [];
+            const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+            const filterOutOdds = (n: number) => n % 2 === 0;
+            const { filterFalseTransform, filterTrueTransform } = objectTransformsHelper.fork(filterOutOdds);
+            pipeHelper.pipe({}, a, [filterFalseTransform, filterTrueTransform]);
+
+            filterTrueTransform.on('data', (evenNumber) => keptValues.push(evenNumber));
+            filterFalseTransform.on('data', (oddNumber) => filteredValues.push(oddNumber));
+
+            await Promise.all([streamEnd(filterTrueTransform), streamEnd(filterFalseTransform)]);
+
+            expect(keptValues).toEqual([2,4,6,8]);
+            expect(filteredValues).toEqual([1,3,5,7]);
         });
     });
 
@@ -215,7 +252,7 @@ describe('Test Utility transforms', () => {
             expect(result).toEqual([2, 4, 6, 8]);
         });
 
-        it('should filter out on crash', async () => {
+        it('should filter out on crash when considerErrorAsFilterOut is true', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const filterOutOdds = async (n: number) => {
                 if (n % 2 === 1) {
@@ -223,13 +260,32 @@ describe('Test Utility transforms', () => {
                 }
                 return true;
             };
-            const b = a.pipe(objectTransformsHelper.async.filter(filterOutOdds));
+            const b = a.pipe(objectTransformsHelper.async.filter(filterOutOdds, {considerErrorAsFilterOut: true}));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
 
             await streamEnd(b);
             expect(result).toEqual([2, 4, 6, 8]);
+        });
+
+        
+        it('should crash on error when considerErrorAsFilterOut is false', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const filterOutOdds = async (n: number) => {
+                if (n % 2 === 0) {
+                    throw Error('asdf');
+                }
+                return true;
+            };
+            const b = a.pipe(objectTransformsHelper.async.filter(filterOutOdds, {considerErrorAsFilterOut: false}));
+
+            const result: number[] = [];
+            b.on('data', (data: number) => result.push(data));
+
+            const streamPromise = streamEnd(b);
+            await expect(streamPromise).rejects.toThrow('asdf')
+            expect(result).toEqual([1]);
         });
 
         it('should pass error if given error stream', async () => {
@@ -256,6 +312,25 @@ describe('Test Utility transforms', () => {
             await Promise.all([streamEnd(passThrough), streamEnd(errorStream)]);
             expect(result).toEqual([2, 4, 6, 8]);
             expect(errors).toEqual([1, 3, 5, 7]);
+        });
+    });
+
+    describe('asyncFork', () => {
+        it('should pass kept values to one stream, and discard values to another', async () => {
+            const keptValues: number[] = [];
+            const filteredValues: number[] = [];
+            const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+            const filterOutOdds = async (n: number) => n % 2 === 0;
+            const { filterFalseTransform, filterTrueTransform } = objectTransformsHelper.async.fork(filterOutOdds);
+            pipeHelper.pipe({}, a, [filterFalseTransform, filterTrueTransform]);
+
+            filterTrueTransform.on('data', (evenNumber) => keptValues.push(evenNumber));
+            filterFalseTransform.on('data', (oddNumber) => filteredValues.push(oddNumber));
+
+            await Promise.all([streamEnd(filterTrueTransform), streamEnd(filterFalseTransform)]);
+
+            expect(keptValues).toEqual([2,4,6,8]);
+            expect(filteredValues).toEqual([1,3,5,7]);
         });
     });
 
