@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import { StreamError } from '../streams/errors/stream-error';
-import { transformer } from '../streams/transforms-helper';
+import { transformer } from '../streams/transformer';
 import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-transform';
 import { SimpleTransform } from '../streams/transforms/base/simple-transform';
 import { ArrayJoinTransform } from '../streams/transforms/utility/array-join-transform';

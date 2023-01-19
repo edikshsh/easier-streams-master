@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import { plumber } from '../streams/plumber';
-import { transformer } from '../streams/transforms-helper';
+import { transformer } from '../streams/transformer';
 import { streamEnd } from './helpers-for-tests';
 
 describe('Test Utility transforms', () => {

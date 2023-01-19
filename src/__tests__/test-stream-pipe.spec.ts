@@ -4,7 +4,7 @@ import { SimpleTransform } from '../streams/transforms/base/simple-transform';
 import { getStreamPipe } from '../streams/stream-pipe';
 import { sleep, streamEnd } from './helpers-for-tests';
 import { TypedPassThrough } from '../streams/transforms/utility/typed-pass-through';
-import { transformer } from '../streams/transforms-helper';
+import { transformer } from '../streams/transformer';
 
 describe('Stream pipe', () => {
     it('should pipe transforms', async () => {

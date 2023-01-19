@@ -4,7 +4,7 @@ import { ErrorTransform } from './errors/error-transform';
 import { ErrorTransformOptions } from './errors/error-transform-options.type';
 import { TypedTransform } from './transforms/typed-transform/typed-transform.interface';
 import { filterOutStreamError } from './errors/filter-out-stream-error';
-import { transformer } from './transforms-helper';
+import { transformer } from './transformer';
 
 type PipableTransformGroup<TSource, TDestination> =
     | TypedTransform<TSource, TDestination>

@@ -1,6 +1,6 @@
 import { plumber } from '../streams/plumber';
 import { TypedPassThrough } from '../streams/transforms/utility/typed-pass-through';
-import { transformer } from '../streams/transforms-helper';
+import { transformer } from '../streams/transformer';
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;

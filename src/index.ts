@@ -1,4 +1,4 @@
-import { Transformer, transformer } from './streams/transforms-helper';
+import { Transformer, transformer } from './streams/transformer';
 import { SimpleAsyncTransform } from './streams/transforms/base/simple-async-transform';
 import { SimpleTransform } from './streams/transforms/base/simple-transform';
 import { getStreamPipe } from './streams/stream-pipe';
