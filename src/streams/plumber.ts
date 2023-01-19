@@ -5,7 +5,6 @@ import { objectTransformsHelper } from './transforms-helper';
 import { ErrorTransformOptions } from './errors/error-transform-options.type';
 import { TypedTransform } from './transforms/typed-transform/typed-transform.interface';
 import { filterOutStreamError } from './errors/filter-out-stream-error';
-import { BaseTransform } from './transforms/base/base-transform';
 
 type PipableTransformGroup<TSource, TDestination> =
     | TypedTransform<TSource, TDestination>
@@ -65,7 +64,7 @@ type TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> = 
     PipableTransformGroup<T11, T12>,
 ];
 
-class PipeHelper {
+class Plumber {
     pipe<T1, T2, T3>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_03<T1, T2, T3>): void;
     pipe<T1, T2, T3, T4>(
         options: ErrorTransformOptions<T1>,
@@ -260,4 +259,4 @@ class PipeHelper {
     }
 }
 
-export const pipeHelper = new PipeHelper();
+export const plumber = new Plumber();

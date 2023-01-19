@@ -1,4 +1,4 @@
-import { pipeHelper } from '../../pipe-helper';
+import { plumber } from '../../plumber';
 import { AsyncTransformFunction } from '../base/simple-async-transform';
 import { FullTransformOptions } from '../types/full-transform-options.type';
 import { ArrayJoinTransform } from './array-join-transform';
@@ -21,7 +21,7 @@ export function fromFunctionConcurrentTransform<TSource, TDestination>(
     const output = new TypedPassThrough<TDestination>(options);
     actionLayer.forEach((action) => action.on('error', (error) => output.emit('error', error)));
 
-    pipeHelper.pipe(options, input, toArray, pickFromArrayLayer, actionLayer, output);
+    plumber.pipe(options, input, toArray, pickFromArrayLayer, actionLayer, output);
     return { input, output };
 }
 

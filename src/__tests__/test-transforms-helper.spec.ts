@@ -1,5 +1,5 @@
 import { Readable } from 'stream';
-import { pipeHelper } from '../streams/pipe-helper';
+import { plumber } from '../streams/plumber';
 import { objectTransformsHelper } from '../streams/transforms-helper';
 import { streamEnd } from './helpers-for-tests';
 
@@ -186,8 +186,8 @@ describe('Test Utility transforms', () => {
 
             const b = objectTransformsHelper.filter(filterOutOdds, { errorStream });
 
-            pipeHelper.pipe({}, a, b);
-            pipeHelper.pipe({ errorStream }, b, passThrough);
+            plumber.pipe({}, a, b);
+            plumber.pipe({ errorStream }, b, passThrough);
             passThrough.on('data', () => undefined);
             const result: number[] = [];
             const errors: number[] = [];
@@ -207,7 +207,7 @@ describe('Test Utility transforms', () => {
             const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
             const filterOutOdds = (n: number) => n % 2 === 0;
             const { filterFalseTransform, filterTrueTransform } = objectTransformsHelper.fork(filterOutOdds);
-            pipeHelper.pipe({}, a, [filterFalseTransform, filterTrueTransform]);
+            plumber.pipe({}, a, [filterFalseTransform, filterTrueTransform]);
 
             filterTrueTransform.on('data', (evenNumber) => keptValues.push(evenNumber));
             filterFalseTransform.on('data', (oddNumber) => filteredValues.push(oddNumber));
@@ -307,7 +307,7 @@ describe('Test Utility transforms', () => {
                 errors.push(error.data);
             });
 
-            pipeHelper.pipe({ errorStream }, a, b, passThrough);
+            plumber.pipe({ errorStream }, a, b, passThrough);
 
             await Promise.all([streamEnd(passThrough), streamEnd(errorStream)]);
             expect(result).toEqual([2, 4, 6, 8]);
@@ -322,7 +322,7 @@ describe('Test Utility transforms', () => {
             const a = objectTransformsHelper.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
             const filterOutOdds = async (n: number) => n % 2 === 0;
             const { filterFalseTransform, filterTrueTransform } = objectTransformsHelper.async.fork(filterOutOdds);
-            pipeHelper.pipe({}, a, [filterFalseTransform, filterTrueTransform]);
+            plumber.pipe({}, a, [filterFalseTransform, filterTrueTransform]);
 
             filterTrueTransform.on('data', (evenNumber) => keptValues.push(evenNumber));
             filterFalseTransform.on('data', (oddNumber) => filteredValues.push(oddNumber));
@@ -435,9 +435,9 @@ describe('Test Utility transforms', () => {
             };
             const add1Transform = objectTransformsHelper.fromFunction(add1WithError, { errorStream });
 
-            pipeHelper.pipeOneToOne(a, add1Transform);
+            plumber.pipeOneToOne(a, add1Transform);
             const passThrough = objectTransformsHelper.passThrough<number>();
-            pipeHelper.pipeOneToOne(add1Transform, passThrough, { errorStream });
+            plumber.pipeOneToOne(add1Transform, passThrough, { errorStream });
             passThrough.on('data', () => undefined);
 
             const result: number[] = [];
@@ -456,8 +456,8 @@ describe('Test Utility transforms', () => {
             const add1 = (n: number) => n + 1;
             const add1Transform = objectTransformsHelper.fromFunction(add1, { errorStream });
 
-            pipeHelper.pipeOneToOne(a, add1Transform, { errorStream });
-            pipeHelper.pipeOneToOne(add1Transform, objectTransformsHelper.void(), { errorStream });
+            plumber.pipeOneToOne(a, add1Transform, { errorStream });
+            plumber.pipeOneToOne(add1Transform, objectTransformsHelper.void(), { errorStream });
 
             const result: number[] = [];
             const errorResulst: number[] = [];
@@ -551,9 +551,9 @@ describe('Test Utility transforms', () => {
             };
             const add1Transform = objectTransformsHelper.async.fromFunction(add1WithError, { errorStream });
 
-            pipeHelper.pipeOneToOne(a, add1Transform);
+            plumber.pipeOneToOne(a, add1Transform);
             const passThrough = objectTransformsHelper.passThrough<number>();
-            pipeHelper.pipeOneToOne(add1Transform, passThrough, { errorStream });
+            plumber.pipeOneToOne(add1Transform, passThrough, { errorStream });
             passThrough.on('data', () => undefined);
 
             const result: number[] = [];
@@ -572,8 +572,8 @@ describe('Test Utility transforms', () => {
             const add1 = async (n: number) => n + 1;
             const add1Transform = objectTransformsHelper.async.fromFunction(add1, { errorStream });
 
-            pipeHelper.pipeOneToOne(a, add1Transform, { errorStream });
-            pipeHelper.pipeOneToOne(add1Transform, objectTransformsHelper.void(), { errorStream });
+            plumber.pipeOneToOne(a, add1Transform, { errorStream });
+            plumber.pipeOneToOne(add1Transform, objectTransformsHelper.void(), { errorStream });
 
             const result: number[] = [];
             const errorResulst: number[] = [];
