@@ -1,10 +1,10 @@
 import { pipeline, Transform } from 'stream';
 import { streamsManyToOneController } from './utility/streams-many-to-one-controller';
 import { ErrorTransform } from './errors/error-transform';
-import { objectTransformsHelper } from './transforms-helper';
 import { ErrorTransformOptions } from './errors/error-transform-options.type';
 import { TypedTransform } from './transforms/typed-transform/typed-transform.interface';
 import { filterOutStreamError } from './errors/filter-out-stream-error';
+import { transformer } from './transforms-helper';
 
 type PipableTransformGroup<TSource, TDestination> =
     | TypedTransform<TSource, TDestination>
@@ -231,7 +231,7 @@ class Plumber {
     private pipeData<T1, T2, T3>(sources: TypedTransform<T1, T2>[], destination: TypedTransform<T2, T3>) {
         // sources.forEach(source => source.pipe(objectTransformsHelper.filter(filterOutStreamError())).pipe(destination));
         sources.forEach((source) => {
-            const errorFilter = objectTransformsHelper.filter(filterOutStreamError()) as Transform; //TODO: fix type
+            const errorFilter = transformer.filter(filterOutStreamError()) as Transform; //TODO: fix type
             this.pipingFunctionLegacy(source, errorFilter);
             this.pipingFunctionLegacy(errorFilter, destination);
         });

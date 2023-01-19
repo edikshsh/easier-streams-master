@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import { StreamError } from '../streams/errors/stream-error';
-import { objectTransformsHelper } from '../streams/transforms-helper';
+import { transformer } from '../streams/transforms-helper';
 import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-transform';
 import { SimpleTransform } from '../streams/transforms/base/simple-transform';
 import { ArrayJoinTransform } from '../streams/transforms/utility/array-join-transform';
@@ -95,7 +95,7 @@ describe('Test transforms', () => {
         });
         it('formats chunk on errors', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const errorStream = objectTransformsHelper.errorTransform<number>(); // Just for passing errors, will not get them
+            const errorStream = transformer.errorTransform<number>(); // Just for passing errors, will not get them
             const chunkFormatter = (chunk: number) => ({ num: chunk });
 
             const throwingTransform = new SimpleTransform(errorOnInput(4, 'asdf'), {
@@ -179,7 +179,7 @@ describe('Test transforms', () => {
 
         it('formats chunk on errors', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const errorStream = objectTransformsHelper.errorTransform<number>(); // Just for passing errors, will not get them
+            const errorStream = transformer.errorTransform<number>(); // Just for passing errors, will not get them
             const chunkFormatter = (chunk: number) => ({ num: chunk });
 
             const throwingTransform = new SimpleAsyncTransform(errorOnInput(4, 'asdf'), {

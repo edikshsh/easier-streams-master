@@ -1,6 +1,6 @@
 import { plumber } from '../streams/plumber';
 import { TypedPassThrough } from '../streams/transforms/utility/typed-pass-through';
-import { objectTransformsHelper } from '../streams/transforms-helper';
+import { transformer } from '../streams/transforms-helper';
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;
@@ -17,12 +17,12 @@ describe('pipeHelper', () => {
 
     beforeEach(() => {
         sourceData = [1, 2, 3, 4, 5, 6, 7, 8];
-        sourceTransform = objectTransformsHelper.fromIterable(sourceData);
+        sourceTransform = transformer.fromIterable(sourceData);
         sourceTransforms = [0, 0].map((_, index) =>
-            objectTransformsHelper.fromIterable([0, 1, 2, 3].map((a) => a + index * 4 + 1)),
+            transformer.fromIterable([0, 1, 2, 3].map((a) => a + index * 4 + 1)),
         );
-        destinationTransform = objectTransformsHelper.passThrough<number>();
-        destinationTransforms = [0, 0].map(() => objectTransformsHelper.passThrough<number>());
+        destinationTransform = transformer.passThrough<number>();
+        destinationTransforms = [0, 0].map(() => transformer.passThrough<number>());
     });
 
     describe('pipeOneToOne', () => {
@@ -37,8 +37,8 @@ describe('pipeHelper', () => {
         });
 
         it('should pass error data', async () => {
-            const errorStream = objectTransformsHelper.errorTransform<number>();
-            const source = sourceTransform.pipe(objectTransformsHelper.fromFunction(errorOnEvenFunc, { errorStream }));
+            const errorStream = transformer.errorTransform<number>();
+            const source = sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { errorStream }));
             plumber.pipeOneToOne(source, destinationTransform, { errorStream });
 
             const result: number[] = [];
@@ -52,7 +52,7 @@ describe('pipeHelper', () => {
         });
 
         it('should error correctly when not piped to error stream', async () => {
-            const source = sourceTransform.pipe(objectTransformsHelper.fromFunction(errorOnEvenFunc));
+            const source = sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc));
             plumber.pipeOneToOne(source, destinationTransform);
 
             const promise = Promise.all([
@@ -77,8 +77,8 @@ describe('pipeHelper', () => {
         });
 
         it('should pass error data', async () => {
-            const errorStream = objectTransformsHelper.errorTransform<number>();
-            const source = sourceTransform.pipe(objectTransformsHelper.fromFunction(errorOnEvenFunc, { errorStream }));
+            const errorStream = transformer.errorTransform<number>();
+            const source = sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { errorStream }));
             plumber.pipeOneToMany(source, destinationTransforms, { errorStream });
 
             const result: number[] = [];
@@ -110,9 +110,9 @@ describe('pipeHelper', () => {
         });
 
         it('should pass error data', async () => {
-            const errorStream = objectTransformsHelper.errorTransform<number>();
+            const errorStream = transformer.errorTransform<number>();
             const sources = sourceTransforms.map((sourceTransform) =>
-                sourceTransform.pipe(objectTransformsHelper.fromFunction(errorOnEvenFunc, { errorStream })),
+                sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { errorStream })),
             );
             plumber.pipeManyToOne(sources, destinationTransform, { errorStream });
 
@@ -132,7 +132,7 @@ describe('pipeHelper', () => {
 
         it('should error correctly when not piped to error stream', async () => {
             const sources = sourceTransforms.map((sourceTransform) =>
-                sourceTransform.pipe(objectTransformsHelper.fromFunction(errorOnEvenFunc)),
+                sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc)),
             );
             plumber.pipeManyToOne(sources, destinationTransform);
             destinationTransform.on('data', () => undefined);
@@ -158,9 +158,9 @@ describe('pipeHelper', () => {
         });
 
         it('should pass error data', async () => {
-            const errorStream = objectTransformsHelper.errorTransform<number>();
+            const errorStream = transformer.errorTransform<number>();
             const sources = sourceTransforms.map((sourceTransform) =>
-                sourceTransform.pipe(objectTransformsHelper.fromFunction(errorOnEvenFunc, { errorStream })),
+                sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { errorStream })),
             );
             plumber.pipeManyToMany(sources, destinationTransforms, { errorStream });
 
@@ -182,10 +182,10 @@ describe('pipeHelper', () => {
 
     describe('pipe', () => {
         it('should pass data', async () => {
-            const layer1 = objectTransformsHelper.passThrough<number>();
-            const layer2 = [0, 1].map(() => objectTransformsHelper.passThrough<number>());
-            const layer3 = [0, 1].map(() => objectTransformsHelper.passThrough<number>());
-            const layer4 = objectTransformsHelper.passThrough<number>();
+            const layer1 = transformer.passThrough<number>();
+            const layer2 = [0, 1].map(() => transformer.passThrough<number>());
+            const layer3 = [0, 1].map(() => transformer.passThrough<number>());
+            const layer4 = transformer.passThrough<number>();
             plumber.pipe({}, sourceTransform, layer1, layer2, layer3, layer4);
 
             const result: number[] = [];
@@ -205,13 +205,13 @@ describe('pipeHelper', () => {
                 return n;
             };
 
-            const errorStream = objectTransformsHelper.errorTransform<number>();
+            const errorStream = transformer.errorTransform<number>();
 
-            const layer1 = objectTransformsHelper.fromFunction(errorOnInput(1), { errorStream });
-            const layer2 = [0, 1].map(() => objectTransformsHelper.fromFunction(errorOnInput(2), { errorStream }));
-            const layer3 = [0, 1].map(() => objectTransformsHelper.fromFunction(errorOnInput(3), { errorStream }));
-            const layer4 = objectTransformsHelper.fromFunction(errorOnInput(4), { errorStream });
-            const layer5 = objectTransformsHelper.passThrough<number>();
+            const layer1 = transformer.fromFunction(errorOnInput(1), { errorStream });
+            const layer2 = [0, 1].map(() => transformer.fromFunction(errorOnInput(2), { errorStream }));
+            const layer3 = [0, 1].map(() => transformer.fromFunction(errorOnInput(3), { errorStream }));
+            const layer4 = transformer.fromFunction(errorOnInput(4), { errorStream });
+            const layer5 = transformer.passThrough<number>();
             plumber.pipe({ errorStream }, sourceTransform, layer1, layer2, layer3, layer4, layer5);
 
             const result: number[] = [];
@@ -234,13 +234,13 @@ describe('pipeHelper', () => {
                 return n;
             };
 
-        const errorStream = objectTransformsHelper.errorTransform<number>();
+        const errorStream = transformer.errorTransform<number>();
 
-        const layer1 = objectTransformsHelper.fromFunction(errorOnInput(1), { errorStream });
-        const layer2 = [0, 1].map(() => objectTransformsHelper.fromFunction(errorOnInput(2), { errorStream }));
-        const layer3_failing = [0, 1].map(() => objectTransformsHelper.fromFunction(errorOnInput(5, 'layer3')));
-        const layer4 = objectTransformsHelper.fromFunction(errorOnInput(3), { errorStream });
-        const layer5 = objectTransformsHelper.passThrough<number>();
+        const layer1 = transformer.fromFunction(errorOnInput(1), { errorStream });
+        const layer2 = [0, 1].map(() => transformer.fromFunction(errorOnInput(2), { errorStream }));
+        const layer3_failing = [0, 1].map(() => transformer.fromFunction(errorOnInput(5, 'layer3')));
+        const layer4 = transformer.fromFunction(errorOnInput(3), { errorStream });
+        const layer5 = transformer.passThrough<number>();
 
         plumber.pipe({ errorStream }, sourceTransform, layer1, layer2, layer3_failing);
         plumber.pipe({}, layer3_failing, layer4);

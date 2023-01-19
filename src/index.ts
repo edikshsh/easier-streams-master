@@ -1,4 +1,4 @@
-import { objectTransformsHelper, TransformsHelper, transformsHelper } from './streams/transforms-helper';
+import { Transformer, transformer } from './streams/transforms-helper';
 import { SimpleAsyncTransform } from './streams/transforms/base/simple-async-transform';
 import { SimpleTransform } from './streams/transforms/base/simple-transform';
 import { getStreamPipe } from './streams/stream-pipe';
@@ -28,9 +28,8 @@ import { StreamError } from './streams/errors/stream-error';
 
 const StreamPipe = getStreamPipe;
 export {
-    transformsHelper,
-    objectTransformsHelper,
-    TransformsHelper,
+    transformer,
+    Transformer,
     plumber,
     StreamPipe,
     SimpleTransform,

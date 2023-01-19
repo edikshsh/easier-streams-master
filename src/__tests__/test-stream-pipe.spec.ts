@@ -4,7 +4,7 @@ import { SimpleTransform } from '../streams/transforms/base/simple-transform';
 import { getStreamPipe } from '../streams/stream-pipe';
 import { sleep, streamEnd } from './helpers-for-tests';
 import { TypedPassThrough } from '../streams/transforms/utility/typed-pass-through';
-import { objectTransformsHelper } from '../streams/transforms-helper';
+import { transformer } from '../streams/transforms-helper';
 
 describe('Stream pipe', () => {
     it('should pipe transforms', async () => {
@@ -118,12 +118,12 @@ describe('Stream pipe', () => {
         const filterOutOdds = (n: number) => !(n % 2);
         const numberToString = (n: number) => n.toString();
 
-        const add1Transform = objectTransformsHelper.async.fromFunction(add1);
+        const add1Transform = transformer.async.fromFunction(add1);
         const create3ElementsFrom1Transform = new SimpleTransform(create3ElementsFrom1, { objectMode: true });
         const takeOnlyFirstElementOfArrayTransform = new SimpleAsyncTransform(takeOnlyFirstElementOfArray, {
             objectMode: true,
         });
-        const filterOutOddsTranform = objectTransformsHelper.filter(filterOutOdds);
+        const filterOutOddsTranform = transformer.filter(filterOutOdds);
         const numberToStringTrasnform = new SimpleTransform(numberToString, { objectMode: true });
 
         const streamPipe = getStreamPipe(

@@ -18,7 +18,7 @@ import { pickElementFromArrayTransform } from './transforms/utility/pick-element
 import { ArrayJoinTransform } from './transforms/utility/array-join-transform';
 import { typeFilterTransform } from './transforms/utility/type-filter-transforms';
 
-export class TransformsHelperBase {
+export class TransformerBase {
     constructor(private defaultTrasformOptions?: TransformOptions) {}
 
     protected mergeOptions<T>(options?: T) {
@@ -31,11 +31,11 @@ export class TransformsHelperBase {
     }
 }
 
-export class TransformsHelper extends TransformsHelperBase {
-    readonly async: AsyncTransformsHelper;
+export class Transformer extends TransformerBase {
+    readonly async: AsyncTransformer;
     constructor(defaultTrasformOptions?: TransformOptions) {
         super(defaultTrasformOptions);
-        this.async = new AsyncTransformsHelper(defaultTrasformOptions);
+        this.async = new AsyncTransformer(defaultTrasformOptions);
     }
 
     arrayJoin<TSource>(length: number, options?: FullTransformOptions<TSource>) {
@@ -106,7 +106,7 @@ export class TransformsHelper extends TransformsHelperBase {
     }
 }
 
-export class AsyncTransformsHelper extends TransformsHelperBase {
+export class AsyncTransformer extends TransformerBase {
     callOnData<TSource>(
         functionToCallOnData: (data: TSource) => Promise<void>,
         options?: FullTransformOptions<TSource>,
@@ -163,6 +163,4 @@ export class AsyncTransformsHelper extends TransformsHelperBase {
     }
 }
 
-export const transformsHelper = new TransformsHelper();
-
-export const objectTransformsHelper = new TransformsHelper({ objectMode: true });
+export const transformer = new Transformer({objectMode: true});
