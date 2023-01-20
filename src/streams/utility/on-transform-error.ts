@@ -9,6 +9,9 @@ export function onTransformError<TSource, TDestination>(
     callback: TypedTransformCallback<TDestination>,
     options?: FullTransformOptions<TSource>,
 ) {
+    if(options?.ignoreErrors){
+        return callback();
+    }
     const finalError = error instanceof Error ? error : new Error(`${error}`);
     if (options?.errorStream) {
         const formattedChunk = getFormattedChunk(chunk, options);

@@ -112,16 +112,51 @@ describe('Test transforms', () => {
             await streamEnd(throwingTransform);
             expect(result).toStrictEqual([1, 2, 3, new StreamError(Error('asdf'), { num: 4 }), 5, 6, 7, 8]);
         });
+        it('Ignores errors given ignoreErrors true', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+
+            const throwingTransform = new SimpleTransform(errorOnInput(4, 'asdf'), {
+                objectMode: true,
+                ignoreErrors: true,
+            });
+
+            const result: StreamError<unknown> | number[] = [];
+            throwingTransform.on('data', (data) => result.push(data));
+
+            a.pipe(throwingTransform);
+
+            await streamEnd(throwingTransform);
+            expect(result).toStrictEqual([1, 2, 3, 5, 6, 7, 8]);
+        });
+
+        it('Ignores errors given ignoreErrors true even when passing error stream', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const errorStream = transformer.errorTransform<number>(); // Just for passing errors, will not get them
+
+            const throwingTransform = new SimpleTransform(errorOnInput(4, 'asdf'), {
+                objectMode: true,
+                ignoreErrors: true,
+                errorStream
+            });
+
+            const result: StreamError<unknown> | number[] = [];
+            throwingTransform.on('data', (data) => result.push(data));
+
+            a.pipe(throwingTransform);
+
+            await streamEnd(throwingTransform);
+            expect(result).toStrictEqual([1, 2, 3, 5, 6, 7, 8]);
+        });
     });
     describe('SimpleAsyncTransform', () => {
         const errorOnInput =
-        (input: number, error = 'asdf') =>
-        async (n: number) => {
-            if (input === n) {
-                throw new Error(error);
-            }
-            return n;
-        };
+            (input: number, error = 'asdf') =>
+            async (n: number) => {
+                if (input === n) {
+                    throw new Error(error);
+                }
+                return n;
+            };
         it('creates a typed transform from function', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const add1 = async (n: number) => n + 1;
@@ -195,6 +230,41 @@ describe('Test transforms', () => {
 
             await streamEnd(throwingTransform);
             expect(result).toStrictEqual([1, 2, 3, new StreamError(Error('asdf'), { num: 4 }), 5, 6, 7, 8]);
+        });
+        it('Ignores errors given ignoreErrors true', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+
+            const throwingTransform = new SimpleAsyncTransform(errorOnInput(4, 'asdf'), {
+                objectMode: true,
+                ignoreErrors: true,
+            });
+
+            const result: StreamError<unknown> | number[] = [];
+            throwingTransform.on('data', (data) => result.push(data));
+
+            a.pipe(throwingTransform);
+
+            await streamEnd(throwingTransform);
+            expect(result).toStrictEqual([1, 2, 3, 5, 6, 7, 8]);
+        });
+
+        it('Ignores errors given ignoreErrors true even when passing error stream', async () => {
+            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const errorStream = transformer.errorTransform<number>(); // Just for passing errors, will not get them
+
+            const throwingTransform = new SimpleAsyncTransform(errorOnInput(4, 'asdf'), {
+                objectMode: true,
+                ignoreErrors: true,
+                errorStream
+            });
+
+            const result: StreamError<unknown> | number[] = [];
+            throwingTransform.on('data', (data) => result.push(data));
+
+            a.pipe(throwingTransform);
+
+            await streamEnd(throwingTransform);
+            expect(result).toStrictEqual([1, 2, 3, 5, 6, 7, 8]);
         });
     });
 

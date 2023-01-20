@@ -2,8 +2,6 @@ import { FullTransformOptions } from '../types/full-transform-options.type';
 import { TypedTransformCallback } from '../types/typed-transform-callback';
 import cloneDeep from 'lodash.clonedeep';
 import { BaseTransform } from '../base/base-transform';
-import { StreamError } from '../../errors/stream-error';
-import { getFormattedChunk } from '../../utility/get-formatted-chunk';
 import { onTransformError } from '../../utility/on-transform-error';
 
 type ArrayElementType<T extends unknown[]> = T extends (infer U)[] ? U : never;
@@ -20,13 +18,6 @@ export class ArraySplitTransform<TSource extends unknown[]> extends BaseTransfor
             callback();
         } catch (error) {
             return onTransformError(error, chunkClone,callback,this.options);
-            // const finalError = error instanceof Error ? error : new Error(`${error}`);
-            // if (this.options?.errorStream) {
-            //     const formattedChunk = getFormattedChunk(chunkClone, this.options);
-            //     const streamError = new StreamError(finalError, formattedChunk);
-            //     return callback(null, streamError as any);
-            // }
-            // return callback(finalError);
         }
     }
 }
