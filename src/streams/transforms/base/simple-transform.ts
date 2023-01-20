@@ -1,6 +1,7 @@
 import cloneDeep from 'lodash.clonedeep';
 import { StreamError } from '../../errors/stream-error';
 import { getFormattedChunk } from '../../utility/get-formatted-chunk';
+import { onTransformError } from '../../utility/on-transform-error';
 import { TypedTransform } from '../typed-transform/typed-transform.interface';
 import { FullTransformOptions } from '../types/full-transform-options.type';
 import { TypedTransformCallback } from '../types/typed-transform-callback';
@@ -25,13 +26,14 @@ export class SimpleTransform<TSource, TDestination>
             const result = this.transformer(chunk);
             callback(null, result);
         } catch (error) {
-            const finalError = error instanceof Error ? error : new Error(`${error}`);
-            if (this.options?.errorStream) {
-                const formattedChunk = getFormattedChunk(chunkClone, this.options);
-                const streamError = new StreamError(finalError, formattedChunk);
-                return callback(null, streamError as any);
-            }
-            return callback(finalError);
+            // const finalError = error instanceof Error ? error : new Error(`${error}`);
+            // if (this.options?.errorStream) {
+            //     const formattedChunk = getFormattedChunk(chunkClone, this.options);
+            //     const streamError = new StreamError(finalError, formattedChunk);
+            //     return callback(null, streamError as any);
+            // }
+            // return callback(finalError);
+            return onTransformError(error, chunkClone,callback,this.options);
         }
     }
 }
