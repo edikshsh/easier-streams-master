@@ -12,7 +12,7 @@ type StreamPipeEvents<T> = {
 
 /**
  * Deprecated
- * Use pipeHelper
+ * Use Plumber
  */
 class StreamPipe<Tsource, Tdestination> extends TypedEventEmitter<StreamPipeEvents<Tdestination>> {
     constructor(

@@ -32,15 +32,3 @@ export class SimpleAsyncTransform<TSource, TDestination> extends BaseTransform<T
         }
     }
 }
-
-// function asdf<TDestination>(data: TDestination, error: Error, isPipedToErrorStream: boolean): {
-//     error: StreamError<TDestination> | Error | null,
-//     data: StreamError<TDestination> | null
-// } {
-//     const finalError = error instanceof Error ? error : new Error(`${error}`)
-//     if (isPipedToErrorStream) {
-//         const streamError = new StreamError(finalError, data);
-//         return { error: null, data: streamError }
-//     }
-//     return { error: finalError, data: null }
-// }
