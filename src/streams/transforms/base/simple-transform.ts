@@ -24,7 +24,7 @@ export class SimpleTransform<TSource, TDestination>
             const result = this.transformer(chunk);
             callback(null, result);
         } catch (error) {
-            return onTransformError(error, chunkClone,callback,this.options);
+            return onTransformError(this, error, chunkClone,callback,this.options);
         }
     }
 }

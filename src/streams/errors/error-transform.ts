@@ -10,7 +10,7 @@ export class ErrorTransform<TSource>
     extends BaseTransform<unknown, StreamError<TSource>>
     implements TypedTransform<unknown, StreamError<TSource>>
 {
-    streamGroupControllerEventCounter: StreamGroupControllerEventCounter = {
+    streamGroupControllerEventCounter: Partial<StreamGroupControllerEventCounter> = {
         close: 0,
         end: 0,
         finish: 0,
@@ -35,12 +35,12 @@ export class ErrorTransform<TSource>
         this.totalInputs += inputLayer.length;
         for (const event in this.streamGroupControllerEventCounter) {
             inputLayer.forEach((input) => {
-                input.once(event, () => {
+                input.once(event, (data) => {
                     const inputsCalledCurrentEvent = ++this.streamGroupControllerEventCounter[
                         event as keyof StreamGroupControllerEventCounter
-                    ];
+                    ]!;
                     if (inputsCalledCurrentEvent === this.totalInputs) {
-                        output.emit(event);
+                        output.emit(event, data);
                     }
                 });
             });

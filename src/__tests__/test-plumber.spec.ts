@@ -1,6 +1,10 @@
-import { plumber } from '../streams/plumber';
+import { Plumber, plumber } from '../streams/plumber';
 import { TypedPassThrough } from '../streams/transforms/utility/typed-pass-through';
 import { transformer } from '../streams/transformer';
+import { pipeline } from 'stream/promises';
+import {pipeline as pipelineCallback} from 'stream'
+import { PassThrough, Readable, Transform, TransformCallback } from 'stream';
+import { SOURCE_ERROR } from '../streams/transforms/typed-transform/transform-events.type';
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;
@@ -138,7 +142,7 @@ describe('pipeHelper', () => {
             destinationTransform.on('data', () => undefined);
 
             const promise = Promise.all([
-                destinationTransform.promisifyEvents(['end']),
+                destinationTransform.promisifyEvents(['end'], 'error'),
                 ...sources.map((source) => source.promisifyEvents([], ['error'])),
             ]);
             await expect(promise).rejects.toThrow(new Error('asdf'));
@@ -224,6 +228,28 @@ describe('pipeHelper', () => {
         });
     });
 
+    describe('piping with pipeline', () => {
+        it('should catch error thrown on one stream in the last piped stream', async () => {
+            const errorOn4 = (n: number) => {
+                if (n === 4) {
+                    console.log('asdfasdf');
+                    
+                    throw Error('asdf');
+                }
+                return n;
+            };
+            const throwingTransform = transformer.fromFunction(errorOn4);
+            plumber.pipe({ usePipeline: true }, sourceTransform, throwingTransform, destinationTransform);
+
+            const result: number[] = [];
+            destinationTransform.on('data', (data) => result.push(data));
+
+            const promise =  destinationTransform.promisifyEvents('end', 'error');
+            await expect(promise).rejects.toThrow('asdf');
+            expect(result).toEqual([1, 2, 3]);
+        });
+    });
+
     it('should be able to mix passing errors and failing', async () => {
         const errorOnInput =
             (input: number, error = 'asdf') =>
@@ -241,10 +267,12 @@ describe('pipeHelper', () => {
         const layer3_failing = [0, 1].map(() => transformer.fromFunction(errorOnInput(5, 'layer3')));
         const layer4 = transformer.fromFunction(errorOnInput(3), { errorStream });
         const layer5 = transformer.passThrough<number>();
+        const layer6 = transformer.passThrough<number>();
 
-        plumber.pipe({ errorStream }, sourceTransform, layer1, layer2, layer3_failing);
-        plumber.pipe({}, layer3_failing, layer4);
-        plumber.pipe({ errorStream }, layer4, layer5);
+        const silentPlumber = new Plumber(true);
+        silentPlumber.pipe({ errorStream, usePipeline: true }, sourceTransform, layer1, layer2, layer3_failing);
+        silentPlumber.pipe({usePipeline: true}, layer3_failing, layer4);
+        silentPlumber.pipe({ errorStream, usePipeline: true }, layer4, layer5, layer6);
 
         const result: number[] = [];
         const errors: number[] = [];
@@ -252,9 +280,8 @@ describe('pipeHelper', () => {
         errorStream.on('data', (error) => errors.push(error.data));
 
         const promise = Promise.all([
-            layer5.promisifyEvents(['end']),
-            errorStream.promisifyEvents(['end']),
-            ...layer3_failing.map((transform) => transform.promisifyEvents(['end'], ['error'])),
+            layer6.promisifyEvents(['end'], 'error'),
+            errorStream.promisifyEvents(['end'], 'error'),
         ]);
         await expect(promise).rejects.toThrow(Error('layer3'));
         expect(result).toEqual([4, 4]);

@@ -17,6 +17,7 @@ import { TypedPassThrough } from './transforms/utility/typed-pass-through';
 import { pickElementFromArrayTransform } from './transforms/utility/pick-element-from-array-transform';
 import { ArrayJoinTransform } from './transforms/utility/array-join-transform';
 import { typeFilterTransform } from './transforms/utility/type-filter-transforms';
+import { PlumbingOptions } from './utility/plumber-options.type';
 
 export class TransformerBase {
     constructor(private defaultTrasformOptions?: TransformOptions) {}

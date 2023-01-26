@@ -1,10 +1,11 @@
-import { pipeline, Transform } from 'stream';
-import { streamsManyToOneController } from './utility/streams-many-to-one-controller';
+import { Transform } from 'stream';
+import { pipeline } from 'stream/promises';
+import { getDefaultEventCounter, streamsManyToOneController } from './utility/streams-many-to-one-controller';
 import { ErrorTransform } from './errors/error-transform';
-import { ErrorTransformOptions } from './errors/error-transform-options.type';
 import { TypedTransform } from './transforms/typed-transform/typed-transform.interface';
 import { filterOutStreamError } from './errors/filter-out-stream-error';
 import { transformer } from './transformer';
+import { PlumberOptions } from './utility/plumber-options.type';
 
 type PipableTransformGroup<TSource, TDestination> =
     | TypedTransform<TSource, TDestination>
@@ -64,48 +65,44 @@ type TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> = 
     PipableTransformGroup<T11, T12>,
 ];
 
-class Plumber {
-    pipe<T1, T2, T3>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_03<T1, T2, T3>): void;
-    pipe<T1, T2, T3, T4>(
-        options: ErrorTransformOptions<T1>,
-        ...transformGroups: TypedTransformPipe_04<T1, T2, T3, T4>
-    ): void;
+export class Plumber {
+
+    constructor(private muteWarnings: boolean){}
+    pipe<T1, T2, T3>(options: PlumberOptions<T1>, ...transformGroups: TypedTransformPipe_03<T1, T2, T3>): void;
+    pipe<T1, T2, T3, T4>(options: PlumberOptions<T1>, ...transformGroups: TypedTransformPipe_04<T1, T2, T3, T4>): void;
     pipe<T1, T2, T3, T4, T5>(
-        options: ErrorTransformOptions<T1>,
+        options: PlumberOptions<T1>,
         ...transformGroups: TypedTransformPipe_05<T1, T2, T3, T4, T5>
     ): void;
     pipe<T1, T2, T3, T4, T5, T6>(
-        options: ErrorTransformOptions<T1>,
+        options: PlumberOptions<T1>,
         ...transformGroups: TypedTransformPipe_06<T1, T2, T3, T4, T5, T6>
     ): void;
     pipe<T1, T2, T3, T4, T5, T6, T7>(
-        options: ErrorTransformOptions<T1>,
+        options: PlumberOptions<T1>,
         ...transformGroups: TypedTransformPipe_07<T1, T2, T3, T4, T5, T6, T7>
     ): void;
     pipe<T1, T2, T3, T4, T5, T6, T7, T8>(
-        options: ErrorTransformOptions<T1>,
+        options: PlumberOptions<T1>,
         ...transformGroups: TypedTransformPipe_08<T1, T2, T3, T4, T5, T6, T7, T8>
     ): void;
     pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9>(
-        options: ErrorTransformOptions<T1>,
+        options: PlumberOptions<T1>,
         ...transformGroups: TypedTransformPipe_09<T1, T2, T3, T4, T5, T6, T7, T8, T9>
     ): void;
     pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(
-        options: ErrorTransformOptions<T1>,
+        options: PlumberOptions<T1>,
         ...transformGroups: TypedTransformPipe_10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
     ): void;
     pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(
-        options: ErrorTransformOptions<T1>,
+        options: PlumberOptions<T1>,
         ...transformGroups: TypedTransformPipe_11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
     ): void;
     pipe<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(
-        options: ErrorTransformOptions<T1>,
+        options: PlumberOptions<T1>,
         ...transformGroups: TypedTransformPipe_12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
     ): void;
-    // pipe<T1, T2, T3 extends T2, T4>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_v2_03<T1, T2, T3, T4>): void
-    // pipe<T1, T2, T3 extends T2, T4, T5 extends T4, T6>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_v2_04<T1, T2, T3, T4, T5, T6>): void
-    // pipe<T1, T2, T3 extends T2, T4, T5 extends T4, T6, T7 extends T6, T8>(options: ErrorTransformOptions<T1>, ...transformGroups: TypedTransformPipe_v2_05<T1, T2, T3, T4, T5, T6, T7, T8>): void
-    pipe(options: ErrorTransformOptions<unknown>, ...transformGroups: PipableTransformGroup<unknown, unknown>[]): void {
+    pipe(options: PlumberOptions<unknown>, ...transformGroups: PipableTransformGroup<unknown, unknown>[]): void {
         const source = transformGroups[0];
         if (!source) {
             throw Error('pipe helper cannot pipe');
@@ -133,15 +130,14 @@ class Plumber {
     pipeOneToOne<A, B, C>(
         srcTransform: TypedTransform<A, B>,
         destTransform: TypedTransform<B, C>,
-        options?: ErrorTransformOptions<A>,
+        plumberOptions?: PlumberOptions<A>,
     ) {
-        const errorStream = options?.errorStream;
+        const errorStream = plumberOptions?.errorStream;
         if (errorStream) {
-            this.pipeErrors([srcTransform], errorStream);
-            this.pipeData([srcTransform], destTransform);
+            this.pipeErrors([srcTransform], errorStream, plumberOptions);
+            this.pipeData([srcTransform], destTransform, plumberOptions);
         } else {
-            // srcTransform.pipe(destTransform)
-            this.pipingFunctionLegacy(srcTransform, destTransform);
+            this.chosenPipingFunction(srcTransform, destTransform, plumberOptions, {chainErrors: true});
         }
         return { source: srcTransform, destination: destTransform };
     }
@@ -149,15 +145,16 @@ class Plumber {
     pipeOneToMany<A, B, C>(
         srcTransform: TypedTransform<A, B>,
         destTransforms: TypedTransform<B, C>[],
-        options?: ErrorTransformOptions<A>,
+        plumberOptions?: PlumberOptions<A>,
     ) {
-        const errorStream = options?.errorStream;
+        const errorStream = plumberOptions?.errorStream;
         if (errorStream) {
-            this.pipeErrors([srcTransform], errorStream);
-            destTransforms.forEach((destination) => this.pipeData([srcTransform], destination));
+            this.pipeErrors([srcTransform], errorStream, plumberOptions);
+            destTransforms.forEach((destination) => this.pipeData([srcTransform], destination, plumberOptions));
         } else {
-            // destTransforms.forEach((destination) => srcTransform.pipe(destination));
-            destTransforms.forEach((destination) => this.pipingFunctionLegacy(srcTransform, destination));
+            destTransforms.forEach((destination) =>
+                this.chosenPipingFunction(srcTransform, destination, plumberOptions, {chainErrors: true}),
+            );
         }
         return { source: srcTransform, destination: destTransforms };
     }
@@ -165,41 +162,43 @@ class Plumber {
     pipeManyToOne<A, B, C>(
         srcTransforms: TypedTransform<A, B>[],
         destTransform: TypedTransform<B, C>,
-        options?: ErrorTransformOptions<A>,
+        plumberOptions?: PlumberOptions<A>,
     ) {
-        const errorStream = options?.errorStream;
+        const errorStream = plumberOptions?.errorStream;
+        const eventCounter = getDefaultEventCounter()
         if (errorStream) {
-            this.pipeErrors(srcTransforms, errorStream);
-            this.pipeData(srcTransforms, destTransform);
+            this.pipeErrors(srcTransforms, errorStream, plumberOptions);
+            this.pipeData(srcTransforms, destTransform, plumberOptions);
         } else {
-            // srcTransforms.forEach(srcTransform => srcTransform.pipe(destTransform, { end: false }));
             srcTransforms.forEach((srcTransform) =>
-                this.pipingFunctionLegacy(srcTransform, destTransform, { end: false }),
+                this.chosenPipingFunction(srcTransform, destTransform, plumberOptions, { end: false}),
             );
             this.abortTransformArrayIfOneFails(srcTransforms);
+            eventCounter.error = srcTransforms.length - 1;
         }
-        streamsManyToOneController(srcTransforms, destTransform);
+        streamsManyToOneController(srcTransforms, destTransform, eventCounter);
         return { source: srcTransforms, destination: destTransform };
     }
 
     pipeManyToMany<A, B, C>(
         srcTransforms: TypedTransform<A, B>[],
         destTransforms: TypedTransform<B, C>[],
-        options?: ErrorTransformOptions<A>,
+        plumberOptions?: PlumberOptions<A>,
     ) {
         if (srcTransforms.length !== destTransforms.length) {
             throw new Error(
                 `pipeManyToMany: can't make connection ${srcTransforms.length} to ${destTransforms.length}`,
             );
         }
-        const errorStream = options?.errorStream;
+        const errorStream = plumberOptions?.errorStream;
         if (errorStream) {
-            this.pipeErrors(srcTransforms, errorStream);
-            srcTransforms.forEach((sourceTransform, index) => this.pipeData([sourceTransform], destTransforms[index]));
+            this.pipeErrors(srcTransforms, errorStream, plumberOptions);
+            srcTransforms.forEach((sourceTransform, index) =>
+                this.pipeData([sourceTransform], destTransforms[index], plumberOptions),
+            );
         } else {
-            // srcTransforms.forEach((srcTransform, index) => srcTransform.pipe(destTransforms[index]));
             srcTransforms.forEach((srcTransform, index) =>
-                this.pipingFunctionLegacy(srcTransform, destTransforms[index]),
+                this.chosenPipingFunction(srcTransform, destTransforms[index], plumberOptions, {chainErrors: true}),
             );
             this.abortTransformArrayIfOneFails(srcTransforms);
         }
@@ -212,37 +211,56 @@ class Plumber {
         }
         transforms.forEach((source, index) => {
             const otherSources = [...transforms.slice(0, index), ...transforms.slice(index + 1, transforms.length)];
-            source.on('error', () => otherSources.forEach((otherSource) => otherSource.destroy()));
+            source.on('error', (error) => otherSources.forEach((otherSource) => otherSource.destroy(error)));
         });
     }
 
     private pipeErrors<TSource, TDestination>(
         sources: TypedTransform<TSource, TDestination>[],
         errorTransform: ErrorTransform<TSource>,
+        plumberOptions: PlumberOptions<TSource>,
     ) {
         if (sources.length > 1) {
             streamsManyToOneController(sources, errorTransform);
         }
-        // sources.forEach(source => source.pipe(errorTransform, { end: false }));
-        sources.forEach((source) => this.pipingFunctionLegacy(source, errorTransform, { end: false }));
+        sources.forEach((source) => this.chosenPipingFunction(source, errorTransform, plumberOptions, { end: false }));
         errorTransform.pipeErrorSource(sources);
     }
 
-    private pipeData<T1, T2, T3>(sources: TypedTransform<T1, T2>[], destination: TypedTransform<T2, T3>) {
-        // sources.forEach(source => source.pipe(objectTransformsHelper.filter(filterOutStreamError())).pipe(destination));
+    private pipeData<T1, T2, T3>(
+        sources: TypedTransform<T1, T2>[],
+        destination: TypedTransform<T2, T3>,
+        plumberOptions: PlumberOptions<T1>,
+    ) {
         sources.forEach((source) => {
             const errorFilter = transformer.filter(filterOutStreamError()) as Transform; //TODO: fix type
-            this.pipingFunctionLegacy(source, errorFilter);
-            this.pipingFunctionLegacy(errorFilter, destination);
+            this.chosenPipingFunction(source, errorFilter, plumberOptions, {chainErrors: true});
+            this.chosenPipingFunction(errorFilter, destination, plumberOptions, {chainErrors: true});
         });
     }
 
-    private pipingFunctionLegacy<T1, T2, T3>(
+    private chosenPipingFunction<T1, T2, T3>(
         source: TypedTransform<T1, T2>,
         destination: TypedTransform<T2, T3>,
-        options?: { end?: boolean | undefined },
+        plumberOptions?: PlumberOptions<T1>,
+        options?: { end?: boolean, chainErrors?: boolean },
     ) {
-        return source.pipe(destination, options);
+        if (plumberOptions?.usePipeline) {
+            return this.pipingFunctionPipeline(source, destination, options);
+        }
+        return this.pipingFunctionPipe(source, destination, options);
+    }
+
+    private pipingFunctionPipe<T1, T2, T3>(
+        source: TypedTransform<T1, T2>,
+        destination: TypedTransform<T2, T3>,
+        options?: { end?: boolean, chainErrors?: boolean },
+    ) {
+        source.pipe(destination, options);
+        if(options?.chainErrors){
+            source.on('error', (error) => destination.destroy(error));
+        }
+        return destination;
     }
 
     // TODO: find an alternative to the missing "end" parameter
@@ -250,13 +268,20 @@ class Plumber {
     // Example: a => async b => c, where all of them are connected to an error stream e.
     // a ends, thus ending b and e.
     // e will end before b, so if b throws after that, e wont catch the error.
-    private pipingFunctionNew<T1, T2, T3>(
+    private pipingFunctionPipeline<T1, T2, T3>(
         source: TypedTransform<T1, T2>,
         destination: TypedTransform<T2, T3>,
-        options?: { end?: boolean | undefined },
+        options?: { end?: boolean },
     ) {
-        return pipeline(source, destination, noop);
+        if (options?.end === false) {
+            if(!this.muteWarnings){
+                console.warn("pipeline doesn't support {end: false} option, using pipe instead");
+            }
+            return this.pipingFunctionPipe(source, destination, options);
+        }
+        pipeline(source, destination).catch(noop);
+        return destination;
     }
 }
 
-export const plumber = new Plumber();
+export const plumber = new Plumber(false);

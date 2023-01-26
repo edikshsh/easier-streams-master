@@ -1,4 +1,5 @@
 import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
 import { plumber } from '../streams/plumber';
 import { transformer } from '../streams/transformer';
 import { streamEnd } from './helpers-for-tests';
@@ -146,7 +147,7 @@ describe('Test Utility transforms', () => {
                 }
                 return true;
             };
-            const b = a.pipe(transformer.filter(filterOutOdds, {considerErrorAsFilterOut: true}));
+            const b = a.pipe(transformer.filter(filterOutOdds, { considerErrorAsFilterOut: true }));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
@@ -163,13 +164,13 @@ describe('Test Utility transforms', () => {
                 }
                 return true;
             };
-            const b = a.pipe(transformer.filter(filterOutOdds, {considerErrorAsFilterOut: false}));
+            const b = a.pipe(transformer.filter(filterOutOdds, { considerErrorAsFilterOut: false }));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
 
             const streamPromise = streamEnd(b);
-            await expect(streamPromise).rejects.toThrow('asdf')
+            await expect(streamPromise).rejects.toThrow('asdf');
             expect(result).toEqual([1]);
         });
 
@@ -214,8 +215,8 @@ describe('Test Utility transforms', () => {
 
             await Promise.all([streamEnd(filterTrueTransform), streamEnd(filterFalseTransform)]);
 
-            expect(keptValues).toEqual([2,4,6,8]);
-            expect(filteredValues).toEqual([1,3,5,7]);
+            expect(keptValues).toEqual([2, 4, 6, 8]);
+            expect(filteredValues).toEqual([1, 3, 5, 7]);
         });
     });
 
@@ -260,7 +261,7 @@ describe('Test Utility transforms', () => {
                 }
                 return true;
             };
-            const b = a.pipe(transformer.async.filter(filterOutOdds, {considerErrorAsFilterOut: true}));
+            const b = a.pipe(transformer.async.filter(filterOutOdds, { considerErrorAsFilterOut: true }));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
@@ -269,7 +270,6 @@ describe('Test Utility transforms', () => {
             expect(result).toEqual([2, 4, 6, 8]);
         });
 
-        
         it('should crash on error when considerErrorAsFilterOut is false', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const filterOutOdds = async (n: number) => {
@@ -278,13 +278,13 @@ describe('Test Utility transforms', () => {
                 }
                 return true;
             };
-            const b = a.pipe(transformer.async.filter(filterOutOdds, {considerErrorAsFilterOut: false}));
+            const b = a.pipe(transformer.async.filter(filterOutOdds, { considerErrorAsFilterOut: false }));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));
 
             const streamPromise = streamEnd(b);
-            await expect(streamPromise).rejects.toThrow('asdf')
+            await expect(streamPromise).rejects.toThrow('asdf');
             expect(result).toEqual([1]);
         });
 
@@ -329,8 +329,8 @@ describe('Test Utility transforms', () => {
 
             await Promise.all([streamEnd(filterTrueTransform), streamEnd(filterFalseTransform)]);
 
-            expect(keptValues).toEqual([2,4,6,8]);
-            expect(filteredValues).toEqual([1,3,5,7]);
+            expect(keptValues).toEqual([2, 4, 6, 8]);
+            expect(filteredValues).toEqual([1, 3, 5, 7]);
         });
     });
 
@@ -667,7 +667,7 @@ describe('Test Utility transforms', () => {
             await output.promisifyEvents(['end'], ['error']);
             expect(estimatedRunTimeSequential).toBeGreaterThan(Date.now() - startTime);
         });
-        it('should fail send error to output if one of the concurrent actions fails', async () => {
+        it('should send error to output if one of the concurrent actions fails', async () => {
             const delay = 20;
             const inputLength = 100;
             const errorOnIndex = 20;
@@ -689,14 +689,8 @@ describe('Test Utility transforms', () => {
             output.on('data', (data) => {
                 outArr.push(data);
             });
-            try {
-                await output.promisifyEvents(['end'], ['error']);
-            } catch (error) {
-                expect(error).toEqual(new Error('asdf'));
-                expect(outArr.length).toBeLessThan(errorOnIndex);
-            } finally {
-                expect.assertions(2);
-            }
+            await expect(output.promisifyEvents(['end'], ['error'])).rejects.toThrow('asdf');
+            expect(outArr.length).toBeLessThan(errorOnIndex);
         });
 
         it('doesnt break backpressure', async () => {
@@ -725,9 +719,137 @@ describe('Test Utility transforms', () => {
             await output.promisifyEvents(['end'], ['error']);
             expect(outArr.length).toBe(inputLength);
         });
+
+        it('should not break pipeline chain of error passing if error comes before concurrent', async () => {
+            const delay = 10;
+            const inputLength = 30;
+            const errorOnIndex = 10;
+            const arr = [...Array(inputLength).keys()];
+            const outArr: number[] = [];
+            const action = async (n: number) => {
+                await new Promise((res) => setTimeout(res, delay));
+                return n * 2;
+            };
+            const errorOn4 = (n: number) => {
+                if (n === 4) {
+                    throw Error('asdf');
+                }
+                return n;
+            };
+            const concurrency = 5;
+
+            const erroringTranform = transformer.fromFunction(errorOn4);
+            const { input, output } = transformer.async.fromFunctionConcurrent(action, concurrency);
+
+            const source = transformer.fromIterable(arr);
+            pipeline(source, erroringTranform, input).catch(() => undefined);
+            pipeline(output, transformer.void()).catch(() => undefined);
+
+            output.on('data', (data) => {
+                outArr.push(data);
+            });
+            await expect(source.promisifyEvents('close', 'error')).rejects.toThrow('asdf')
+            expect(outArr.length).toBeLessThan(errorOnIndex);
+        });
+
+        it('should not break pipeline chain of error passing if error comes after concurrent', async () => {
+            const delay = 10;
+            const inputLength = 30;
+            const errorOnIndex = 10;
+            const arr = [...Array(inputLength).keys()];
+            const outArr: number[] = [];
+            const action = async (n: number) => {
+                await new Promise((res) => setTimeout(res, delay));
+                return n * 2;
+            };
+            const errorOn4 = (n: number) => {
+                if (n === 4) {
+                    throw Error('asdf');
+                }
+                return n;
+            };
+            const concurrency = 5;
+
+            const erroringTranform = transformer.fromFunction(errorOn4);
+            const passThrough = transformer.passThrough<number>();
+            const { input, output } = transformer.async.fromFunctionConcurrent(action, concurrency, {});
+
+            const source = Readable.from(arr);
+            pipeline(source, input).catch(() => undefined);
+            pipeline(output, erroringTranform, passThrough).catch(() => undefined);
+
+            passThrough.on('data', (data) => {
+                outArr.push(data);
+            });
+
+            await expect(passThrough.promisifyEvents('end', 'error')).rejects.toThrow('asdf');
+            expect(outArr.length).toBeLessThan(errorOnIndex);
+        });
+
+        it('should not break pipeline chain of error passing if concurrent errors', async () => {
+            const delay = 10;
+            const inputLength = 30;
+            const errorOnIndex = 10;
+            const arr = [...Array(inputLength).keys()];
+            const outArr: number[] = [];
+            const action = async (n: number) => {
+                if (n === errorOnIndex) {
+                    throw new Error('asdf');
+                }
+                await new Promise((res) => setTimeout(res, delay));
+                return n * 2;
+            };
+            const concurrency = 5;
+
+            const passThrough = transformer.passThrough<number>();
+            const { input, output } = transformer.async.fromFunctionConcurrent(action, concurrency, {});
+
+            const source = Readable.from(arr);
+            pipeline(source, input).catch(() => undefined);
+            pipeline(output, passThrough).catch(() => undefined);
+
+            passThrough.on('data', (data) => {
+                outArr.push(data);
+            });
+
+            await expect(passThrough.promisifyEvents('end', 'error')).rejects.toThrow('asdf');
+            expect(outArr.length).toBeLessThan(errorOnIndex);
+        });
+
+        it('should return correct data when using pipeline', async () => {
+            const delay = 10;
+            const inputLength = 30;
+            const arr = [...Array(inputLength).keys()];
+            const outArr: number[] = [];
+            const expectedOutput = arr.map((n) => n * 2);
+            const action = async (n: number) => {
+                await new Promise((res) => setTimeout(res, delay));
+                return n * 2;
+            };
+            const concurrency = 5;
+
+            const passThrough = transformer.passThrough<number>();
+            const { input, output } = transformer.async.fromFunctionConcurrent(action, concurrency, {});
+
+            const source = Readable.from(arr);
+            pipeline(source, input).catch(() => undefined);
+            pipeline(output, passThrough).catch(() => undefined);
+
+            output.on('data', (data) => {
+                outArr.push(data);
+            });
+            await output.promisifyEvents('end', 'error');
+            expect(outArr).toEqual(expectedOutput);
+        });
     });
 
     describe('fromFunctionConcurrent2', () => {
+        const errorOn4 = (n: number) => {
+            if (n === 4) {
+                throw Error('asdf');
+            }
+            return n;
+        };
         it('should return correct but unordered output', async () => {
             const delay = 20;
             const inputLength = 200;
@@ -774,7 +896,7 @@ describe('Test Utility transforms', () => {
             await concurrentTransform.promisifyEvents(['end'], ['error']);
             expect(estimatedRunTimeSequential).toBeGreaterThan(Date.now() - startTime);
         });
-        it('should fail send error to output if one of the concurrent actions fails', async () => {
+        it('should send error to output if one of the concurrent actions fails', async () => {
             const delay = 20;
             const inputLength = 100;
             const errorOnIndex = 20;
@@ -796,14 +918,70 @@ describe('Test Utility transforms', () => {
             concurrentTransform.on('data', (data) => {
                 outArr.push(data);
             });
-            try {
-                await concurrentTransform.promisifyEvents(['end'], ['error']);
-            } catch (error) {
-                expect(error).toEqual(new Error('asdf'));
-                expect(outArr.length).toBeLessThan(errorOnIndex);
-            } finally {
-                expect.assertions(2);
-            }
+            await expect(concurrentTransform.promisifyEvents(['end'], ['error'])).rejects.toThrow('asdf');
+            expect(outArr.length).toBeLessThan(errorOnIndex);
+        });
+
+        it('should not break pipeline chain of error passing if error comes before concurrent', async () => {
+            const delay = 10;
+            const inputLength = 30;
+            const arr = [...Array(inputLength).keys()];
+            const action = async (n: number) => {
+                await new Promise((res) => setTimeout(res, delay));
+                return n * 2;
+            };
+            const concurrency = 5;
+            const erroringTranform = transformer.fromFunction(errorOn4);
+            const concurrentTransform = transformer.async.fromFunctionConcurrent2(action, concurrency);
+
+            const source = transformer.fromIterable(arr);
+
+            const p = concurrentTransform.promisifyEvents('close', 'error');
+            pipeline(source, erroringTranform, concurrentTransform).catch(() => undefined);
+            await expect(p).rejects.toThrow('asdf');
+        });
+
+        it('should not break pipeline chain of error passing if error comes after concurrent', async () => {
+            const delay = 10;
+            const inputLength = 30;
+            const arr = [...Array(inputLength).keys()];
+            const action = async (n: number) => {
+                await new Promise((res) => setTimeout(res, delay));
+                return n * 2;
+            };
+            const concurrency = 5;
+            const concurrentTransform = transformer.async.fromFunctionConcurrent2(action, concurrency);
+            const erroringTranform = transformer.fromFunction(errorOn4);
+            const passThrough = transformer.passThrough();
+
+            const source = transformer.fromIterable(arr);
+            const p = passThrough.promisifyEvents('close', 'error');
+
+            pipeline(source, concurrentTransform, erroringTranform, passThrough).catch(() => undefined);
+            await expect(p).rejects.toThrow('asdf');
+        });
+
+        it('should not break pipeline chain of error passing if concurrent errors', async () => {
+            const delay = 10;
+            const inputLength = 30;
+            const errorOnIndex = 10;
+            const arr = [...Array(inputLength).keys()];
+            const action = async (n: number) => {
+                if (n === errorOnIndex) {
+                    throw new Error('asdf');
+                }
+                await new Promise((res) => setTimeout(res, delay));
+                return n * 2;
+            };
+            const concurrency = 5;
+            const concurrentTransform = transformer.async.fromFunctionConcurrent2(action, concurrency);
+            const passThrough = transformer.passThrough();
+
+            const source = transformer.fromIterable(arr);
+            const p = passThrough.promisifyEvents('close', 'error');
+
+            pipeline(source, concurrentTransform, passThrough).catch(() => undefined);
+            await expect(p).rejects.toThrow('asdf');
         });
 
         it('doesnt break backpressure', async () => {

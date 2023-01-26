@@ -2,6 +2,7 @@ import { cloneDeep } from 'lodash';
 import { EventEmitter, TransformCallback, TransformOptions } from 'stream';
 import { StreamError } from '../../errors/stream-error';
 import { getFormattedChunk } from '../../utility/get-formatted-chunk';
+import { onTransformError } from '../../utility/on-transform-error';
 import { BaseTransform } from '../base/base-transform';
 import { AsyncTransformFunction } from '../base/simple-async-transform';
 import { FullTransformOptions } from '../types/full-transform-options.type';
@@ -27,15 +28,15 @@ export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TS
     }
 
     async inputQueueIsEmpty(): Promise<void> {
-        this.itemQueue.length === 0
-            ? await Promise.resolve()
-            : await new Promise((res) => this.ee.once('itemQueueEmpty', res));
+        return this.itemQueue.length === 0
+            ? Promise.resolve()
+            : new Promise((res) => this.ee.once('itemQueueEmpty', res));
     }
 
     async allWorkersFinished(): Promise<void> {
-        this.liveWorkers === 0
-            ? await Promise.resolve()
-            : await new Promise((res) => this.ee.once('promiseQueueEmpty', res));
+        return this.liveWorkers === 0
+            ? Promise.resolve()
+            : new Promise((res) => this.ee.once('promiseQueueEmpty', res));
     }
 
     async startWorker(): Promise<void> {
@@ -69,18 +70,21 @@ export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TS
             this.push(await this.transformer(item));
             return true;
         } catch (error) {
-            const finalError = error instanceof Error ? error : new Error(`${error}`);
-            if (this.options?.errorStream) {
-                const formattedChunk = getFormattedChunk(chunkClone, this.options);
-                const streamError = new StreamError(finalError, formattedChunk);
-                this.push(streamError);
-            } else {
-                this.destroy(finalError);
-            }
+            this.onWorkerError(error, chunkClone);
         } finally {
             this.itemsDone++;
         }
         return true;
+    }
+
+    onWorkerError(error: unknown, chunk: TSource){
+        const callback:TypedTransformCallback<TDestination>  = (error, chunk) => {
+            if(error){
+                return this.destroy(error);
+            }
+            this.push(chunk);
+        }
+        return onTransformError(this, error, chunk, callback, this.options);
     }
 
     async enqueueItems(items: TSource[]): Promise<void> {
@@ -88,8 +92,7 @@ export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TS
             this.itemQueue.push(item);
             void this.startWorker();
         });
-        const a = await this.inputQueueIsEmpty();
-        return a;
+        return this.inputQueueIsEmpty();
     }
 
     async _transform(

@@ -17,7 +17,7 @@ export class ArraySplitTransform<TSource extends unknown[]> extends BaseTransfor
             chunks.forEach((chunk) => this.push(chunk));
             callback();
         } catch (error) {
-            return onTransformError(error, chunkClone,callback,this.options);
+            return onTransformError(this, error, chunkClone,callback,this.options);
         }
     }
 }

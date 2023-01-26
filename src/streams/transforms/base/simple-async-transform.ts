@@ -21,7 +21,7 @@ export class SimpleAsyncTransform<TSource, TDestination> extends BaseTransform<T
             const result = await this.transformer(chunk);
             return callback(null, result);
         } catch (error) {
-            return onTransformError(error, chunkClone,callback,this.options);
+            return onTransformError(this, error, chunkClone,callback,this.options);
         }
     }
 }

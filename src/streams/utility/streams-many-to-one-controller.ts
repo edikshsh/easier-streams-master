@@ -13,24 +13,24 @@ export function streamsManyToOneController(
     eventCounter = getDefaultEventCounter(),
 ) {
     const concurrency = inputLayer.length;
+    // eventCounter.error = inputLayer.length - 1;
     for (const event in eventCounter) {
         inputLayer.forEach((input) => {
-            input.once(event, () => {
-                const inputsCalledCurrentEvent = ++eventCounter[event as keyof StreamGroupControllerEventCounter];
-                // console.log(`${event} => ${inputsCalledCurrentEvent}`);
+            input.once(event, (data) => {
+                const inputsCalledCurrentEvent = ++eventCounter[event as keyof StreamGroupControllerEventCounter]!;
                 if (inputsCalledCurrentEvent === concurrency) {
-                    // console.log(`emitting ${event}`);
-                    output.emit(event);
+                    output.emit(event, data);
                 }
             });
         });
     }
 }
 
-function getDefaultEventCounter(): StreamGroupControllerEventCounter {
+export function getDefaultEventCounter(): Partial<StreamGroupControllerEventCounter> {
     return {
         close: 0,
         end: 0,
         finish: 0,
+        error: 0
     };
 }
