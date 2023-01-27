@@ -15,7 +15,7 @@ export function onTransformError<TSource, TDestination>(
         return callback();
     }
     const finalError = error instanceof Error ? error : new Error(`${error}`);
-    if (options?.errorStream) {
+    if (options?.shouldPushErrorsForward) {
         const formattedChunk = getFormattedChunk(chunk, options);
         const streamError = new StreamError(finalError, formattedChunk);
         return callback(null, streamError as any);

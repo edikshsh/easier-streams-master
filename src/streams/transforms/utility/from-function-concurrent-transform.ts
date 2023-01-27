@@ -6,13 +6,13 @@ import { ConcurrentTransform } from './concurrent-transform';
 import { fromAsyncFunctionTransform } from './from-function-transforms';
 import { pickElementFromArrayTransform } from './pick-element-from-array-transform';
 import { TypedPassThrough } from './typed-pass-through';
-import { PlumbingOptions } from '../../utility/plumber-options.type';
-import { transformer } from '../../transformer';
+import { PlumberOptions } from '../../utility/plumber-options.type';
 
 export function fromFunctionConcurrentTransform<TSource, TDestination>(
     transformFunction: AsyncTransformFunction<TSource, TDestination | undefined>,
     concurrency: number,
     transformOptions: FullTransformOptions<any> = {},
+    plumberOptions: PlumberOptions<any> = {},
 ) {
     const input = new TypedPassThrough<TSource>(transformOptions);
     const toArray = new ArrayJoinTransform<TSource>(concurrency, transformOptions);
@@ -23,7 +23,7 @@ export function fromFunctionConcurrentTransform<TSource, TDestination>(
         fromAsyncFunctionTransform(transformFunction, transformOptions),
     );
     const output = new TypedPassThrough<TDestination>(transformOptions);
-    plumber.pipe(transformOptions, input, toArray, pickFromArrayLayer, actionLayer, output);
+    plumber.pipe({ ...plumberOptions }, input, toArray, pickFromArrayLayer, actionLayer, output);
     return { input, output };
 }
 

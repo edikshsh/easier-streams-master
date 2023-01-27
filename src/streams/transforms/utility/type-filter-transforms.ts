@@ -9,7 +9,7 @@ export function typeFilterTransform<TSource, TDestination extends TSource>(
         try {
             return typeFilterFunction(chunk) ? chunk : undefined;
         } catch (error) {
-            if (options?.errorStream) {
+            if (options?.shouldPushErrorsForward) {
                 throw error;
             }
             return undefined;

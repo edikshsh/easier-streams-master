@@ -189,7 +189,7 @@ describe('Test Utility transforms', () => {
                 return true;
             };
 
-            const b = transformer.filter(filterOutOdds, { errorStream });
+            const b = transformer.filter(filterOutOdds, { shouldPushErrorsForward: true });
 
             plumber.pipe({}, a, b);
             plumber.pipe({ errorStream }, b, passThrough);
@@ -293,7 +293,7 @@ describe('Test Utility transforms', () => {
                 return true;
             };
 
-            const b = transformer.async.filter(filterOutOdds, { errorStream });
+            const b = transformer.async.filter(filterOutOdds, { shouldPushErrorsForward: true });
             const result: number[] = [];
             const errors: number[] = [];
             passThrough.on('data', (data: number) => result.push(data));
@@ -427,7 +427,7 @@ describe('Test Utility transforms', () => {
                 }
                 return n + 1;
             };
-            const add1Transform = transformer.fromFunction(add1WithError, { errorStream });
+            const add1Transform = transformer.fromFunction(add1WithError, { shouldPushErrorsForward: true });
 
             plumber.pipeOneToOne(a, add1Transform);
             const passThrough = transformer.passThrough<number>();
@@ -448,7 +448,7 @@ describe('Test Utility transforms', () => {
             const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
             const errorStream = transformer.errorTransform<number>();
             const add1 = (n: number) => n + 1;
-            const add1Transform = transformer.fromFunction(add1, { errorStream });
+            const add1Transform = transformer.fromFunction(add1, { shouldPushErrorsForward: true });
 
             plumber.pipeOneToOne(a, add1Transform, { errorStream });
             plumber.pipeOneToOne(add1Transform, transformer.void(), { errorStream });
@@ -543,7 +543,7 @@ describe('Test Utility transforms', () => {
                 }
                 return n + 1;
             };
-            const add1Transform = transformer.async.fromFunction(add1WithError, { errorStream });
+            const add1Transform = transformer.async.fromFunction(add1WithError, { shouldPushErrorsForward: true });
 
             plumber.pipeOneToOne(a, add1Transform);
             const passThrough = transformer.passThrough<number>();
@@ -564,7 +564,7 @@ describe('Test Utility transforms', () => {
             const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
             const errorStream = transformer.errorTransform<number>();
             const add1 = async (n: number) => n + 1;
-            const add1Transform = transformer.async.fromFunction(add1, { errorStream });
+            const add1Transform = transformer.async.fromFunction(add1, { shouldPushErrorsForward: true });
 
             plumber.pipeOneToOne(a, add1Transform, { errorStream });
             plumber.pipeOneToOne(add1Transform, transformer.void(), { errorStream });

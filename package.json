@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "easier-streams-file": "file:./easier-streams/easier-streams-0.1.3.tgz",
+    "easier-streams-file": "file:./easier-streams/easier-streams-0.1.4.tgz",
     "lodash": "^4.17.21",
     "lodash.clonedeep": "^4.5.0",
     "npm": "^8.19.2",

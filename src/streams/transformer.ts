@@ -17,7 +17,7 @@ import { TypedPassThrough } from './transforms/utility/typed-pass-through';
 import { pickElementFromArrayTransform } from './transforms/utility/pick-element-from-array-transform';
 import { ArrayJoinTransform } from './transforms/utility/array-join-transform';
 import { typeFilterTransform } from './transforms/utility/type-filter-transforms';
-import { PlumbingOptions } from './utility/plumber-options.type';
+import { PlumberOptions } from './utility/plumber-options.type';
 
 export class TransformerBase {
     constructor(private defaultTrasformOptions?: TransformOptions) {}
@@ -144,9 +144,10 @@ export class AsyncTransformer extends TransformerBase {
         transformer: AsyncTransformFunction<TSource, TDestination | undefined>,
         concurrency: number,
         options?: FullTransformOptions<any>,
+        plumberOptions?: PlumberOptions<any>
     ) {
         const finalOptions = this.mergeOptions(options);
-        return fromFunctionConcurrentTransform(transformer, concurrency, finalOptions);
+        return fromFunctionConcurrentTransform(transformer, concurrency, finalOptions, plumberOptions);
     }
 
     fromFunctionConcurrent2<TSource, TDestination>(

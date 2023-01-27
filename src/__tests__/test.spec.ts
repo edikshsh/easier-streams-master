@@ -98,7 +98,7 @@ describe('Test transforms', () => {
 
             const throwingTransform = new SimpleTransform(getFailOnNumberFunction(4), {
                 objectMode: true,
-                errorStream,
+                shouldPushErrorsForward: true,
                 chunkFormatter,
             });
 
@@ -134,7 +134,7 @@ describe('Test transforms', () => {
             const throwingTransform = new SimpleTransform(getFailOnNumberFunction(4), {
                 objectMode: true,
                 ignoreErrors: true,
-                errorStream,
+                shouldPushErrorsForward: true,
             });
 
             const result: StreamError<unknown> | number[] = [];
@@ -209,7 +209,7 @@ describe('Test transforms', () => {
 
             const throwingTransform = new SimpleAsyncTransform(getFailOnNumberAsyncFunction(4), {
                 objectMode: true,
-                errorStream,
+                shouldPushErrorsForward: true,
                 chunkFormatter,
             });
 
@@ -245,7 +245,7 @@ describe('Test transforms', () => {
             const throwingTransform = new SimpleAsyncTransform(getFailOnNumberAsyncFunction(4), {
                 objectMode: true,
                 ignoreErrors: true,
-                errorStream,
+                shouldPushErrorsForward: true,
             });
 
             const result: StreamError<unknown> | number[] = [];
