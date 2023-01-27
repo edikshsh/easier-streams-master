@@ -29,7 +29,7 @@ export function getFailOnNumberAsyncFunction(input: number, delay?: number, erro
     const syncVersion = getFailOnNumberFunction(input, errorText);
     return async (num: number) => {
         const newNum = syncVersion(num);
-        if(delay){
+        if (delay) {
             await sleep(delay);
         }
         return newNum;
@@ -54,41 +54,39 @@ export function delayerMult2(delay: number) {
         return num * 2;
     };
 }
-export function failOnOddsSync (n: number){
+export function failOnOddsSync(n: number) {
     if (n % 2 === 0) {
         throw Error(DEFAULT_ERROR_TEXT);
     }
     return n;
 }
 
-
-export function failOnEvensSync(n: number){
+export function failOnEvensSync(n: number) {
     if (n % 2 === 1) {
         throw Error(DEFAULT_ERROR_TEXT);
     }
     return n;
 }
 
-export async function failOnOddsAsync (n: number){
+export async function failOnOddsAsync(n: number) {
     return failOnOddsSync(n);
 }
 
-export async function failOnEvensAsync (n: number){
+export async function failOnEvensAsync(n: number) {
     return !failOnOddsSync(n);
 }
 
-export function filterOutOddsSync (n: number){
-    return !(n%2)
+export function filterOutOddsSync(n: number) {
+    return !(n % 2);
 }
 
-export function filterOutOddsAsync (delay?: number){
-    return async(n: number) => {
-        if(delay){
+export function filterOutOddsAsync(delay?: number) {
+    return async (n: number) => {
+        if (delay) {
             await sleep(delay);
         }
-        return !(n%2)
-    }
+        return !(n % 2);
+    };
 }
-
 
 export const DEFAULT_ERROR_TEXT = 'asdf';

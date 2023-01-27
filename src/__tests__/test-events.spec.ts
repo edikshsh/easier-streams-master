@@ -44,7 +44,7 @@ describe('TypedEventEmitter', () => {
     it('Should reject correctly when sending event as array', async () => {
         const ee = new TypedEventEmitter<StreamPipeEvents<number>>();
 
-        const promise = ee.promisifyEvents([],['error']);
+        const promise = ee.promisifyEvents([], ['error']);
 
         setTimeout(() => ee.emit('error', Error(DEFAULT_ERROR_TEXT)), 10);
         await expect(promise).rejects.toThrow(Error(DEFAULT_ERROR_TEXT));

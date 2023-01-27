@@ -5,7 +5,14 @@ import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-tr
 import { SimpleTransform } from '../streams/transforms/base/simple-transform';
 import { ArrayJoinTransform } from '../streams/transforms/utility/array-join-transform';
 import { ArraySplitTransform } from '../streams/transforms/utility/array-split-transform';
-import { DEFAULT_ERROR_TEXT, filterOutOddsAsync, getFailOnNumberAsyncFunction, getFailOnNumberFunction, sleep, streamEnd } from './helpers-for-tests';
+import {
+    DEFAULT_ERROR_TEXT,
+    filterOutOddsAsync,
+    getFailOnNumberAsyncFunction,
+    getFailOnNumberFunction,
+    sleep,
+    streamEnd,
+} from './helpers-for-tests';
 
 describe('Test transforms', () => {
     describe('ArrayJoinTransform', () => {
@@ -52,7 +59,6 @@ describe('Test transforms', () => {
     });
 
     describe('SimpleTransform', () => {
-
         it('creates a typed transform from function', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const add1 = (n: number) => n + 1;
@@ -128,7 +134,7 @@ describe('Test transforms', () => {
             const throwingTransform = new SimpleTransform(getFailOnNumberFunction(4), {
                 objectMode: true,
                 ignoreErrors: true,
-                errorStream
+                errorStream,
             });
 
             const result: StreamError<unknown> | number[] = [];
@@ -239,7 +245,7 @@ describe('Test transforms', () => {
             const throwingTransform = new SimpleAsyncTransform(getFailOnNumberAsyncFunction(4), {
                 objectMode: true,
                 ignoreErrors: true,
-                errorStream
+                errorStream,
             });
 
             const result: StreamError<unknown> | number[] = [];
@@ -257,10 +263,10 @@ describe('Test transforms', () => {
         const add1 = (n: number) => n + 1;
         const numberToString = async (n: number) => n.toString();
 
-        const filterOutEvens = async(n: number) => {
+        const filterOutEvens = async (n: number) => {
             await sleep(10);
-            return (n%2) ? n : undefined
-        }
+            return n % 2 ? n : undefined;
+        };
 
         const add1Transform = new SimpleTransform(add1, { objectMode: true });
         const filterOutOddsTranform = new SimpleAsyncTransform(filterOutEvens, { objectMode: true });

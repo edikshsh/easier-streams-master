@@ -2,7 +2,7 @@ import { Plumber, plumber } from '../streams/plumber';
 import { TypedPassThrough } from '../streams/transforms/utility/typed-pass-through';
 import { transformer } from '../streams/transformer';
 import { pipeline } from 'stream/promises';
-import {pipeline as pipelineCallback} from 'stream'
+import { pipeline as pipelineCallback } from 'stream';
 import { PassThrough, Readable, Transform, TransformCallback } from 'stream';
 import { SOURCE_ERROR } from '../streams/transforms/typed-transform/transform-events.type';
 import { DEFAULT_ERROR_TEXT, getFailOnNumberFunction } from './helpers-for-tests';
@@ -203,7 +203,6 @@ describe('pipeHelper', () => {
         });
 
         it('should pass error data', async () => {
-
             const errorStream = transformer.errorTransform<number>();
 
             const layer1 = transformer.fromFunction(getFailOnNumberFunction(1), { errorStream });
@@ -231,14 +230,13 @@ describe('pipeHelper', () => {
             const result: number[] = [];
             destinationTransform.on('data', (data) => result.push(data));
 
-            const promise =  destinationTransform.promisifyEvents('end', 'error');
+            const promise = destinationTransform.promisifyEvents('end', 'error');
             await expect(promise).rejects.toThrow(DEFAULT_ERROR_TEXT);
             expect(result).toEqual([1, 2, 3]);
         });
     });
 
     it('should be able to mix passing errors and failing', async () => {
-
         const errorStream = transformer.errorTransform<number>();
 
         const layer1 = transformer.fromFunction(getFailOnNumberFunction(1), { errorStream });
@@ -250,7 +248,7 @@ describe('pipeHelper', () => {
 
         const silentPlumber = new Plumber(true);
         silentPlumber.pipe({ errorStream, usePipeline: true }, sourceTransform, layer1, layer2, layer3_failing);
-        silentPlumber.pipe({usePipeline: true}, layer3_failing, layer4);
+        silentPlumber.pipe({ usePipeline: true }, layer3_failing, layer4);
         silentPlumber.pipe({ errorStream, usePipeline: true }, layer4, layer5, layer6);
 
         const result: number[] = [];

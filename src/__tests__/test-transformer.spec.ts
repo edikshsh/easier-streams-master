@@ -2,7 +2,16 @@ import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { plumber } from '../streams/plumber';
 import { transformer } from '../streams/transformer';
-import { DEFAULT_ERROR_TEXT, delayer, delayerMult2, failOnOddsAsync, failOnOddsSync, filterOutOddsAsync, filterOutOddsSync, getFailOnNumberAsyncFunctionMult2, getFailOnNumberFunction, streamEnd } from './helpers-for-tests';
+import {
+    DEFAULT_ERROR_TEXT,
+    delayer,
+    delayerMult2,
+    filterOutOddsAsync,
+    filterOutOddsSync,
+    getFailOnNumberAsyncFunctionMult2,
+    getFailOnNumberFunction,
+    streamEnd,
+} from './helpers-for-tests';
 
 describe('Test Utility transforms', () => {
     describe('callOnData', () => {
@@ -213,10 +222,6 @@ describe('Test Utility transforms', () => {
             expect(filteredValues).toEqual([1, 3, 5, 7]);
         });
     });
-
-    // function isNumber(n: unknown): n is number{
-    //     return typeof n === 'number'
-    // }
 
     describe('filterType', () => {
         it('should filter out by type correctly', async () => {
@@ -661,7 +666,10 @@ describe('Test Utility transforms', () => {
 
             const concurrency = 5;
 
-            const { input, output } = transformer.async.fromFunctionConcurrent(getFailOnNumberAsyncFunctionMult2(errorOnIndex, delay), concurrency);
+            const { input, output } = transformer.async.fromFunctionConcurrent(
+                getFailOnNumberAsyncFunctionMult2(errorOnIndex, delay),
+                concurrency,
+            );
 
             Readable.from(arr).pipe(input);
 
@@ -715,7 +723,7 @@ describe('Test Utility transforms', () => {
             output.on('data', (data) => {
                 outArr.push(data);
             });
-            await expect(source.promisifyEvents('close', 'error')).rejects.toThrow(DEFAULT_ERROR_TEXT)
+            await expect(source.promisifyEvents('close', 'error')).rejects.toThrow(DEFAULT_ERROR_TEXT);
             expect(outArr.length).toBeLessThan(errorOnIndex);
         });
 
@@ -753,7 +761,11 @@ describe('Test Utility transforms', () => {
             const concurrency = 5;
 
             const passThrough = transformer.passThrough<number>();
-            const { input, output } = transformer.async.fromFunctionConcurrent(getFailOnNumberAsyncFunctionMult2(errorOnIndex, delay), concurrency, {});
+            const { input, output } = transformer.async.fromFunctionConcurrent(
+                getFailOnNumberAsyncFunctionMult2(errorOnIndex, delay),
+                concurrency,
+                {},
+            );
 
             const source = Readable.from(arr);
             pipeline(source, input).catch(() => undefined);
@@ -846,7 +858,10 @@ describe('Test Utility transforms', () => {
             const outArr: number[] = [];
             const concurrency = 5;
 
-            const concurrentTransform = transformer.async.fromFunctionConcurrent2(getFailOnNumberAsyncFunctionMult2(errorOnIndex, delay), concurrency);
+            const concurrentTransform = transformer.async.fromFunctionConcurrent2(
+                getFailOnNumberAsyncFunctionMult2(errorOnIndex, delay),
+                concurrency,
+            );
 
             Readable.from(arr).pipe(concurrentTransform);
 
@@ -897,7 +912,10 @@ describe('Test Utility transforms', () => {
             const arr = [...Array(inputLength).keys()];
 
             const concurrency = 5;
-            const concurrentTransform = transformer.async.fromFunctionConcurrent2(getFailOnNumberAsyncFunctionMult2(errorOnIndex, delay), concurrency);
+            const concurrentTransform = transformer.async.fromFunctionConcurrent2(
+                getFailOnNumberAsyncFunctionMult2(errorOnIndex, delay),
+                concurrency,
+            );
             const passThrough = transformer.passThrough();
 
             const source = transformer.fromIterable(arr);
