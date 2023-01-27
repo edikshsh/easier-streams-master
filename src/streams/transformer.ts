@@ -49,7 +49,7 @@ export class Transformer extends TransformerBase {
         return new ArraySplitTransform<TSource[]>(finalOptions);
     }
 
-    callOnDataSync<TSource>(functionToCallOnData: (data: TSource) => void, options?: FullTransformOptions<TSource>) {
+    callOnData<TSource>(functionToCallOnData: (data: TSource) => void, options?: FullTransformOptions<TSource>) {
         const finalOptions = this.mergeOptions(options);
         return callOnDataSyncTransform<TSource>(functionToCallOnData, finalOptions);
     }

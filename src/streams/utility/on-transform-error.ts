@@ -1,5 +1,6 @@
 import { Stream } from 'stream';
 import { StreamError } from '../errors/stream-error';
+import { SOURCE_ERROR } from '../transforms/typed-transform/transform-events.type';
 import { FullTransformOptions } from '../transforms/types/full-transform-options.type';
 import { TypedTransformCallback } from '../transforms/types/typed-transform-callback';
 import { getFormattedChunk } from './get-formatted-chunk';
@@ -20,6 +21,6 @@ export function onTransformError<TSource, TDestination>(
         const streamError = new StreamError(finalError, formattedChunk);
         return callback(null, streamError as any);
     }
-    stream.emit('source-error', finalError);
+    stream.emit(SOURCE_ERROR, finalError);
     return callback(finalError);
 }

@@ -28,7 +28,7 @@ describe('Test Utility transforms', () => {
                     item.a += 10;
                     modified.push(item);
                 };
-                const sideEffectsTransform = transformer.callOnDataSync(increaseBy10);
+                const sideEffectsTransform = transformer.callOnData(increaseBy10);
                 const b = a.pipe(sideEffectsTransform);
 
                 const result: { a: number }[] = [];
@@ -50,7 +50,7 @@ describe('Test Utility transforms', () => {
                     item.a += 10;
                     modified.push(item);
                 };
-                const sideEffectsTransform = transformer.callOnDataSync(increaseBy10);
+                const sideEffectsTransform = transformer.callOnData(increaseBy10);
                 const pt = transformer.passThrough<{ a: number }>();
                 const b = a.pipe(sideEffectsTransform).pipe(pt);
 
