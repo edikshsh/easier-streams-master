@@ -4,10 +4,10 @@ import { pipeline } from "stream/promises";
 import {transformer} from '../../src/streams/transformer'
 import {plumber} from '../../src/streams/plumber'
 
-function getFailOnNumberFunction(input: number){
+function getFailOnNumberFunction(input: number, errorText = 'asdf'){
     return (num: number) => {
         if(num === input){
-            throw Error('asdf');
+            throw Error(errorText);
         }
         return num;
     }

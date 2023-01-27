@@ -5,7 +5,7 @@ import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-tr
 import { SimpleTransform } from '../streams/transforms/base/simple-transform';
 import { ArrayJoinTransform } from '../streams/transforms/utility/array-join-transform';
 import { ArraySplitTransform } from '../streams/transforms/utility/array-split-transform';
-import { streamEnd } from './helpers-for-tests';
+import { DEFAULT_ERROR_TEXT, filterOutOddsAsync, getFailOnNumberAsyncFunction, getFailOnNumberFunction, sleep, streamEnd } from './helpers-for-tests';
 
 describe('Test transforms', () => {
     describe('ArrayJoinTransform', () => {
@@ -52,14 +52,6 @@ describe('Test transforms', () => {
     });
 
     describe('SimpleTransform', () => {
-        const errorOnInput =
-            (input: number, error = 'asdf') =>
-            (n: number) => {
-                if (input === n) {
-                    throw new Error(error);
-                }
-                return n;
-            };
 
         it('creates a typed transform from function', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
@@ -98,7 +90,7 @@ describe('Test transforms', () => {
             const errorStream = transformer.errorTransform<number>(); // Just for passing errors, will not get them
             const chunkFormatter = (chunk: number) => ({ num: chunk });
 
-            const throwingTransform = new SimpleTransform(errorOnInput(4, 'asdf'), {
+            const throwingTransform = new SimpleTransform(getFailOnNumberFunction(4), {
                 objectMode: true,
                 errorStream,
                 chunkFormatter,
@@ -110,12 +102,12 @@ describe('Test transforms', () => {
             a.pipe(throwingTransform);
 
             await streamEnd(throwingTransform);
-            expect(result).toStrictEqual([1, 2, 3, new StreamError(Error('asdf'), { num: 4 }), 5, 6, 7, 8]);
+            expect(result).toStrictEqual([1, 2, 3, new StreamError(Error(DEFAULT_ERROR_TEXT), { num: 4 }), 5, 6, 7, 8]);
         });
         it('Ignores errors given ignoreErrors true', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
 
-            const throwingTransform = new SimpleTransform(errorOnInput(4, 'asdf'), {
+            const throwingTransform = new SimpleTransform(getFailOnNumberFunction(4), {
                 objectMode: true,
                 ignoreErrors: true,
             });
@@ -133,7 +125,7 @@ describe('Test transforms', () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const errorStream = transformer.errorTransform<number>(); // Just for passing errors, will not get them
 
-            const throwingTransform = new SimpleTransform(errorOnInput(4, 'asdf'), {
+            const throwingTransform = new SimpleTransform(getFailOnNumberFunction(4), {
                 objectMode: true,
                 ignoreErrors: true,
                 errorStream
@@ -149,14 +141,6 @@ describe('Test transforms', () => {
         });
     });
     describe('SimpleAsyncTransform', () => {
-        const errorOnInput =
-            (input: number, error = 'asdf') =>
-            async (n: number) => {
-                if (input === n) {
-                    throw new Error(error);
-                }
-                return n;
-            };
         it('creates a typed transform from function', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const add1 = async (n: number) => n + 1;
@@ -217,7 +201,7 @@ describe('Test transforms', () => {
             const errorStream = transformer.errorTransform<number>(); // Just for passing errors, will not get them
             const chunkFormatter = (chunk: number) => ({ num: chunk });
 
-            const throwingTransform = new SimpleAsyncTransform(errorOnInput(4, 'asdf'), {
+            const throwingTransform = new SimpleAsyncTransform(getFailOnNumberAsyncFunction(4), {
                 objectMode: true,
                 errorStream,
                 chunkFormatter,
@@ -229,12 +213,12 @@ describe('Test transforms', () => {
             a.pipe(throwingTransform);
 
             await streamEnd(throwingTransform);
-            expect(result).toStrictEqual([1, 2, 3, new StreamError(Error('asdf'), { num: 4 }), 5, 6, 7, 8]);
+            expect(result).toStrictEqual([1, 2, 3, new StreamError(Error(DEFAULT_ERROR_TEXT), { num: 4 }), 5, 6, 7, 8]);
         });
         it('Ignores errors given ignoreErrors true', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
 
-            const throwingTransform = new SimpleAsyncTransform(errorOnInput(4, 'asdf'), {
+            const throwingTransform = new SimpleAsyncTransform(getFailOnNumberAsyncFunction(4), {
                 objectMode: true,
                 ignoreErrors: true,
             });
@@ -252,7 +236,7 @@ describe('Test transforms', () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
             const errorStream = transformer.errorTransform<number>(); // Just for passing errors, will not get them
 
-            const throwingTransform = new SimpleAsyncTransform(errorOnInput(4, 'asdf'), {
+            const throwingTransform = new SimpleAsyncTransform(getFailOnNumberAsyncFunction(4), {
                 objectMode: true,
                 ignoreErrors: true,
                 errorStream
@@ -271,14 +255,15 @@ describe('Test transforms', () => {
     it('Able to mix different transforms in a single stream', async () => {
         const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
         const add1 = (n: number) => n + 1;
-        const filterOutOdds = async (n: number) => {
-            await new Promise((res) => setTimeout(res, 100));
-            return n % 2 ? n : undefined;
-        };
         const numberToString = async (n: number) => n.toString();
 
+        const filterOutEvens = async(n: number) => {
+            await sleep(10);
+            return (n%2) ? n : undefined
+        }
+
         const add1Transform = new SimpleTransform(add1, { objectMode: true });
-        const filterOutOddsTranform = new SimpleAsyncTransform(filterOutOdds, { objectMode: true });
+        const filterOutOddsTranform = new SimpleAsyncTransform(filterOutEvens, { objectMode: true });
         const numberToStringTrasnform = new SimpleAsyncTransform(numberToString, { objectMode: true });
 
         a.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);

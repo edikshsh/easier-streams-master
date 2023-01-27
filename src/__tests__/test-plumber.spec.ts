@@ -5,6 +5,7 @@ import { pipeline } from 'stream/promises';
 import {pipeline as pipelineCallback} from 'stream'
 import { PassThrough, Readable, Transform, TransformCallback } from 'stream';
 import { SOURCE_ERROR } from '../streams/transforms/typed-transform/transform-events.type';
+import { DEFAULT_ERROR_TEXT, getFailOnNumberFunction } from './helpers-for-tests';
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;
@@ -14,7 +15,7 @@ describe('pipeHelper', () => {
     let sourceData: number[];
     const errorOnEvenFunc = (n: number) => {
         if (n % 2 === 0) {
-            throw Error('asdf');
+            throw Error(DEFAULT_ERROR_TEXT);
         }
         return n;
     };
@@ -64,7 +65,7 @@ describe('pipeHelper', () => {
                 source.promisifyEvents([], ['error']),
             ]);
 
-            await expect(promise).rejects.toThrow(new Error('asdf'));
+            await expect(promise).rejects.toThrow(new Error(DEFAULT_ERROR_TEXT));
         });
     });
 
@@ -145,7 +146,7 @@ describe('pipeHelper', () => {
                 destinationTransform.promisifyEvents(['end'], 'error'),
                 ...sources.map((source) => source.promisifyEvents([], ['error'])),
             ]);
-            await expect(promise).rejects.toThrow(new Error('asdf'));
+            await expect(promise).rejects.toThrow(new Error(DEFAULT_ERROR_TEXT));
         });
     });
 
@@ -202,19 +203,13 @@ describe('pipeHelper', () => {
         });
 
         it('should pass error data', async () => {
-            const errorOnInput = (input: number) => (n: number) => {
-                if (input === n) {
-                    throw new Error('asdf');
-                }
-                return n;
-            };
 
             const errorStream = transformer.errorTransform<number>();
 
-            const layer1 = transformer.fromFunction(errorOnInput(1), { errorStream });
-            const layer2 = [0, 1].map(() => transformer.fromFunction(errorOnInput(2), { errorStream }));
-            const layer3 = [0, 1].map(() => transformer.fromFunction(errorOnInput(3), { errorStream }));
-            const layer4 = transformer.fromFunction(errorOnInput(4), { errorStream });
+            const layer1 = transformer.fromFunction(getFailOnNumberFunction(1), { errorStream });
+            const layer2 = [0, 1].map(() => transformer.fromFunction(getFailOnNumberFunction(2), { errorStream }));
+            const layer3 = [0, 1].map(() => transformer.fromFunction(getFailOnNumberFunction(3), { errorStream }));
+            const layer4 = transformer.fromFunction(getFailOnNumberFunction(4), { errorStream });
             const layer5 = transformer.passThrough<number>();
             plumber.pipe({ errorStream }, sourceTransform, layer1, layer2, layer3, layer4, layer5);
 
@@ -230,42 +225,26 @@ describe('pipeHelper', () => {
 
     describe('piping with pipeline', () => {
         it('should catch error thrown on one stream in the last piped stream', async () => {
-            const errorOn4 = (n: number) => {
-                if (n === 4) {
-                    console.log('asdfasdf');
-                    
-                    throw Error('asdf');
-                }
-                return n;
-            };
-            const throwingTransform = transformer.fromFunction(errorOn4);
+            const throwingTransform = transformer.fromFunction(getFailOnNumberFunction(4));
             plumber.pipe({ usePipeline: true }, sourceTransform, throwingTransform, destinationTransform);
 
             const result: number[] = [];
             destinationTransform.on('data', (data) => result.push(data));
 
             const promise =  destinationTransform.promisifyEvents('end', 'error');
-            await expect(promise).rejects.toThrow('asdf');
+            await expect(promise).rejects.toThrow(DEFAULT_ERROR_TEXT);
             expect(result).toEqual([1, 2, 3]);
         });
     });
 
     it('should be able to mix passing errors and failing', async () => {
-        const errorOnInput =
-            (input: number, error = 'asdf') =>
-            (n: number) => {
-                if (input === n) {
-                    throw new Error(error);
-                }
-                return n;
-            };
 
         const errorStream = transformer.errorTransform<number>();
 
-        const layer1 = transformer.fromFunction(errorOnInput(1), { errorStream });
-        const layer2 = [0, 1].map(() => transformer.fromFunction(errorOnInput(2), { errorStream }));
-        const layer3_failing = [0, 1].map(() => transformer.fromFunction(errorOnInput(5, 'layer3')));
-        const layer4 = transformer.fromFunction(errorOnInput(3), { errorStream });
+        const layer1 = transformer.fromFunction(getFailOnNumberFunction(1), { errorStream });
+        const layer2 = [0, 1].map(() => transformer.fromFunction(getFailOnNumberFunction(2), { errorStream }));
+        const layer3_failing = [0, 1].map(() => transformer.fromFunction(getFailOnNumberFunction(5, 'layer3')));
+        const layer4 = transformer.fromFunction(getFailOnNumberFunction(3), { errorStream });
         const layer5 = transformer.passThrough<number>();
         const layer6 = transformer.passThrough<number>();
 
