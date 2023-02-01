@@ -69,6 +69,9 @@ export class Transformer extends TransformerBase {
         return filterTransform<TSource>(filterFunction, finalOptions);
     }
 
+    /**
+    * fork - pass it a filter function, get 2 transforms, one that keeps the truthy values, one that keeps the others
+    */
     fork<TSource>(filterFunction: (chunk: TSource) => boolean, options?: FullTransformOptions<TSource>) {
         const finalOptions = this.mergeOptions(options);
         const filterTrueTransform = filterTransform<TSource>(filterFunction, finalOptions);
