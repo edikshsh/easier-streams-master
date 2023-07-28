@@ -59,6 +59,11 @@ export class Transformer extends TransformerBase {
         return voidInputTransform<TSource>(finalOptions);
     }
 
+    /**
+     * 
+     * @param options 
+     * @returns just a typed passthrough
+     */
     passThrough<T>(options?: FullTransformOptions<T>) {
         const finalOptions = this.mergeOptions(options);
         return new TypedPassThrough<T>(finalOptions);
