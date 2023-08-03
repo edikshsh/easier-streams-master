@@ -6,7 +6,7 @@ import { FullTransformOptions } from '../types/full-transform-options.type';
 import { TypedTransformCallback } from '../types/typed-transform-callback';
 import { BaseTransform } from './base-transform';
 
-export type TransformFunction<TSource, TDestination> = (item: TSource, self:Transform) => TDestination;
+export type TransformFunction<TSource, TDestination> = (item: TSource, self: Transform) => TDestination;
 
 export class SimpleTransform<TSource, TDestination>
     extends BaseTransform<TSource, TDestination>
@@ -25,7 +25,7 @@ export class SimpleTransform<TSource, TDestination>
             const result = this.transformer(chunk, this);
             callback(null, result);
         } catch (error) {
-            return onTransformError(this, error, chunkClone,callback,this.options);
+            return onTransformError(this, error, chunkClone, callback, this.options);
         }
     }
 }

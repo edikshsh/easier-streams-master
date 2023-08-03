@@ -1,4 +1,6 @@
 import { Stream } from 'stream';
+import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-transform';
+import { SimpleTransform } from '../streams/transforms/base/simple-transform';
 
 describe('asdf', () => {
     it('should run', () => {
@@ -87,6 +89,20 @@ export function filterOutOddsAsync(delay?: number) {
         }
         return !(n % 2);
     };
+}
+
+export function noop(...args: any[]) {
+    return undefined;
+}
+
+export async function streamToArray<TSource, TDestination>(
+    transform: SimpleTransform<TSource, TDestination> | SimpleAsyncTransform<TSource, TDestination>,
+) {
+    const arr: TDestination[] = [];
+    for await (const chunk of transform) {
+        arr.push(chunk);
+    }
+    return arr;
 }
 
 export const DEFAULT_ERROR_TEXT = 'asdf';

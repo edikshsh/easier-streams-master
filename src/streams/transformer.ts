@@ -18,6 +18,8 @@ import { pickElementFromArrayTransform } from './transforms/utility/pick-element
 import { arrayJoinTransform } from './transforms/utility/array-join-transform';
 import { typeFilterTransform } from './transforms/utility/type-filter-transforms';
 import { PlumberOptions } from './utility/plumber-options.type';
+import { asyncCounterTransform, counterTransform } from './transforms/utility/counter-transform';
+import { AsyncFilterFunction, FilterFunction } from './transforms/types/filter-function.type';
 
 export class TransformerBase {
     constructor(private defaultTrasformOptions?: TransformOptions) {}
@@ -152,12 +154,30 @@ export class Transformer extends TransformerBase {
      *     console.log(elem); // 1, 3
      * }
      */
-    filter<TSource>(
-        filterFunction: (chunk: TSource) => boolean,
-        options?: FullTransformOptions<TSource> & FilterOptions,
-    ) {
+    filter<TSource>(filterFunction: FilterFunction<TSource>, options?: FullTransformOptions<TSource> & FilterOptions) {
         const finalOptions = this.mergeOptions(options);
         return filterTransform<TSource>(filterFunction, finalOptions);
+    }
+
+    /**
+     *
+     * @param filterFunction - filter function that controls if the counter is increased
+     * @param options
+     * @returns a transform that counts the passing chunks, and a getter for the counted amount
+     * @example
+     * const countOnlyOdds = (n: number) => n % 2 === 0;
+     * const readable = Readable.from([1, 2, 3]);
+     * const { transform: counterTransform, getCounter } =transformer.counter(countOnlyOdds);
+     * readable.pipe(counterTransform);
+     * for await (const elem of counterTransform) {
+     *     console.log(elem); // 1, 2, 3
+     * }
+     * console.log(getCounter()); // 1
+     *
+     */
+    counter<TSource>(countFilter?: FilterFunction<TSource>, options?: FullTransformOptions<TSource> & FilterOptions) {
+        const finalOptions = this.mergeOptions(options);
+        return counterTransform(countFilter, finalOptions);
     }
 
     /**
@@ -312,11 +332,35 @@ export class AsyncTransformer extends TransformerBase {
      * }
      */
     filter<TSource>(
-        filterFunction: (chunk: TSource) => Promise<boolean>,
+        filterFunction: AsyncFilterFunction<TSource>,
         options?: FullTransformOptions<TSource> & FilterOptions,
     ) {
         const finalOptions = this.mergeOptions(options);
         return asyncFilterTransform<TSource>(filterFunction, finalOptions);
+    }
+
+    /**
+     *
+     * @param filterFunction - async filter function that controls if the counter is increased
+     * @param options
+     * @returns a transform that counts the passing chunks, and a getter for the counted amount
+     * @example
+     * const countOnlyOdds = async (n: number) => n % 2 === 0;
+     * const readable = Readable.from([1, 2, 3]);
+     * const { transform: counterTransform, getCounter } = transformer.async.counter(countOnlyOdds);
+     * readable.pipe(counterTransform);
+     * for await (const elem of counterTransform) {
+     *     console.log(elem); // 1, 2, 3
+     * }
+     * console.log(getCounter()); // 1
+     *
+     */
+    counter<TSource>(
+        countFilter: AsyncFilterFunction<TSource>,
+        options?: FullTransformOptions<TSource> & FilterOptions,
+    ) {
+        const finalOptions = this.mergeOptions(options);
+        return asyncCounterTransform(countFilter, finalOptions);
     }
 
     /**
