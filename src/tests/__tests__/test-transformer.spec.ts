@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
-import { plumber } from '../streams/plumber';
-import { transformer } from '../streams/transformer';
+import { plumber } from '../../streams/plumber';
+import { transformer } from '../../streams/transformer';
 import {
     DEFAULT_ERROR_TEXT,
     delayer,

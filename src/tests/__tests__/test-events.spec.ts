@@ -1,4 +1,4 @@
-import { TypedEventEmitter } from '../emitters/Emitter';
+import { TypedEventEmitter } from '../../emitters/Emitter';
 import { DEFAULT_ERROR_TEXT } from './helpers-for-tests';
 
 type StreamPipeEvents<T> = {

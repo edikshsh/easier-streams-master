@@ -1,10 +1,10 @@
 import { Readable } from 'stream';
-import { StreamError } from '../streams/errors/stream-error';
-import { transformer } from '../streams/transformer';
-import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-transform';
-import { SimpleTransform } from '../streams/transforms/base/simple-transform';
-import { arrayJoinTransform } from '../streams/transforms/utility/array-join-transform';
-import { arraySplitTransform } from '../streams/transforms/utility/array-split-transform';
+import { StreamError } from '../../streams/errors/stream-error';
+import { transformer } from '../../streams/transformer';
+import { SimpleAsyncTransform } from '../../streams/transforms/base/simple-async-transform';
+import { SimpleTransform } from '../../streams/transforms/base/simple-transform';
+import { arrayJoinTransform } from '../../streams/transforms/utility/array-join-transform';
+import { arraySplitTransform } from '../../streams/transforms/utility/array-split-transform';
 import {
     DEFAULT_ERROR_TEXT,
     getFailOnNumberAsyncFunction,
