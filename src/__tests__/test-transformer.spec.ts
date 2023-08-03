@@ -10,7 +10,9 @@ import {
     filterOutOddsSync,
     getFailOnNumberAsyncFunctionMult2,
     getFailOnNumberFunction,
+    sleep,
     streamEnd,
+    streamToArray,
 } from './helpers-for-tests';
 
 describe('Test Utility transforms', () => {
@@ -202,6 +204,82 @@ describe('Test Utility transforms', () => {
             await Promise.all([streamEnd(b), streamEnd(errorStream)]);
             expect(result).toEqual([2, 4, 6, 8]);
             expect(errors).toEqual([1, 3, 5, 7]);
+        });
+    });
+
+    describe('counter', () => {
+        describe('sync', () => {
+            it('should pass all data without change', async () => {
+                const arr = [1, 2, 3, 4, 5, 6, 7, 8];
+                const readable = Readable.from(arr);
+                // const filterOutOdds = (n: number) => n % 2 === 0;
+                const { transform: counterTransform } = transformer.counter();
+                readable.pipe(counterTransform);
+
+                const result = await streamToArray(counterTransform);
+
+                expect(result).toEqual(arr);
+            });
+
+            it('should count the number of chunks passed correctly', async () => {
+                const readable = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+                // const filterOutOdds = (n: number) => n % 2 === 0;
+                const { transform: counterTransform, getCounter } = transformer.counter();
+                readable.pipe(counterTransform);
+
+                await streamToArray(counterTransform);
+                expect(getCounter()).toEqual(8);
+            });
+
+            it('should count the number of chunks passed correctly when given a non default counter function', async () => {
+                const readable = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+                const countOnlyOdds = (n: number) => n % 2 === 0;
+                const { transform: counterTransform, getCounter } = transformer.counter(countOnlyOdds);
+                readable.pipe(counterTransform);
+
+                await streamToArray(counterTransform);
+                expect(getCounter()).toEqual(4);
+            });
+
+            it('should pass all data even when given a non default counter function', async () => {
+                const arr = [1, 2, 3, 4, 5, 6, 7, 8];
+                const readable = Readable.from(arr);
+                const countOnlyOdds = (n: number) => n % 2 === 0;
+                const { transform: counterTransform } = transformer.counter(countOnlyOdds);
+                readable.pipe(counterTransform);
+
+                const result = await streamToArray(counterTransform);
+
+                expect(result).toEqual(arr);
+            });
+        });
+
+        describe('async', () => {
+            const countOnlyOddsAsync = async (n: number) => {
+                await sleep(10);
+                return n % 2 === 0;
+            };
+
+            it('should count the number of chunks passed correctly when given a non default counter function', async () => {
+                const readable = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+                const countOnlyOdds = (n: number) => n % 2 === 0;
+                const { transform: counterTransform, getCounter } = transformer.async.counter(countOnlyOddsAsync);
+                readable.pipe(counterTransform);
+
+                await streamToArray(counterTransform);
+                expect(getCounter()).toEqual(4);
+            });
+
+            it('should pass all data even when given a non default counter function', async () => {
+                const arr = [1, 2, 3, 4, 5, 6, 7, 8];
+                const readable = Readable.from(arr);
+                const { transform: counterTransform } = transformer.async.counter(countOnlyOddsAsync);
+                readable.pipe(counterTransform);
+
+                const result = await streamToArray(counterTransform);
+
+                expect(result).toEqual(arr);
+            });
         });
     });
 
