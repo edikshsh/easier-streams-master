@@ -11,7 +11,7 @@ import {
     getFailOnNumberFunction,
     sleep,
     streamEnd,
-} from './helpers-for-tests';
+} from '../helpers-for-tests';
 
 describe('Test transforms', () => {
     describe('ArrayJoinTransform', () => {

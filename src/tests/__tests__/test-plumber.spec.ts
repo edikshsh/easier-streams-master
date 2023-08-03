@@ -5,7 +5,7 @@ import { pipeline } from 'stream/promises';
 import { pipeline as pipelineCallback } from 'stream';
 import { PassThrough, Readable, Transform, TransformCallback } from 'stream';
 import { SOURCE_ERROR } from '../../streams/transforms/typed-transform/transform-events.type';
-import { DEFAULT_ERROR_TEXT, getFailOnNumberFunction } from './helpers-for-tests';
+import { DEFAULT_ERROR_TEXT, getFailOnNumberFunction } from '../helpers-for-tests';
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;

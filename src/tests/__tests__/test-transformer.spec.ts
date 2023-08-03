@@ -13,7 +13,7 @@ import {
     sleep,
     streamEnd,
     streamToArray,
-} from './helpers-for-tests';
+} from '../helpers-for-tests';
 
 describe('Test Utility transforms', () => {
     describe('callOnData', () => {

@@ -1,6 +1,6 @@
 import { Stream } from 'stream';
-import { SimpleAsyncTransform } from '../../streams/transforms/base/simple-async-transform';
-import { SimpleTransform } from '../../streams/transforms/base/simple-transform';
+import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-transform';
+import { SimpleTransform } from '../streams/transforms/base/simple-transform';
 
 describe('asdf', () => {
     it('should run', () => {
