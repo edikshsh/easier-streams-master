@@ -17,61 +17,53 @@ import {
 
 describe('Test Utility transforms', () => {
     describe('callOnData', () => {
+        const numberToObject = (n: number) => ({
+            a: n,
+        });
         describe('sync', () => {
             it('should not modify the original chunk', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map((item) => {
-                    return { a: item };
-                });
-                const a = Readable.from(arr);
+                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map(numberToObject);
+                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map(numberToObject);
+
+                const source = Readable.from(arr);
                 const increaseBy10 = (item: { a: number }) => {
                     item.a += 10;
                     modified.push(item);
                 };
                 const sideEffectsTransform = transformer.callOnData(increaseBy10);
-                const b = a.pipe(sideEffectsTransform);
+                source.pipe(sideEffectsTransform);
 
-                const result: { a: number }[] = [];
                 const modified: { a: number }[] = [];
-                b.on('data', (data: { a: number }) => result.push(data));
+                const result = await streamToArray(sideEffectsTransform);
 
-                await streamEnd(b);
                 expect(result).toEqual(arr);
                 expect(modified).toEqual(expectedModifiedArr);
             });
 
             it('handles errors from side effects', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const a = Readable.from(arr);
+                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map(numberToObject);
+                const source = Readable.from(arr);
                 const increaseBy10 = (item: { a: number }) => {
-                    if (item.a === 3) throw Error('aaaaa');
+                    if (item.a === 3) throw Error(DEFAULT_ERROR_TEXT);
                     item.a += 10;
                     modified.push(item);
                 };
                 const sideEffectsTransform = transformer.callOnData(increaseBy10);
-                const pt = transformer.passThrough<{ a: number }>();
-                const b = a.pipe(sideEffectsTransform).pipe(pt);
+                const destination = transformer.passThrough<{ a: number }>();
+                source.pipe(sideEffectsTransform).pipe(destination);
 
                 const result: { a: number }[] = [];
                 const modified: { a: number }[] = [];
-                b.on('data', (data: { a: number }) => result.push(data));
+                destination.on('data', (data: { a: number }) => result.push(data));
                 await expect(sideEffectsTransform.promisifyEvents(['end', 'close'], ['error'])).rejects.toThrow(
-                    Error('aaaaa'),
+                    Error(DEFAULT_ERROR_TEXT),
                 );
             });
         });
         describe('async', () => {
             it('should not modify the original chunk', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map((item) => {
-                    return { a: item };
-                });
+                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map(numberToObject);
+                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map(numberToObject);
                 const a = Readable.from(arr);
                 const increaseBy10 = async (item: { a: number }) => {
                     item.a += 10;
@@ -90,15 +82,11 @@ describe('Test Utility transforms', () => {
             });
 
             it('Should await call on data to finish before ending stream', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map((item) => {
-                    return { a: item };
-                });
+                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map(numberToObject);
+                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map(numberToObject);
                 const a = Readable.from(arr);
                 const increaseBy10 = async (item: { a: number }) => {
-                    await new Promise((res) => setTimeout(res, 100));
+                    await sleep(10);
                     item.a += 10;
                     modified.push(item);
                 };
@@ -115,24 +103,24 @@ describe('Test Utility transforms', () => {
             });
 
             it('handles errors from side effects', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const a = Readable.from(arr);
+                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map(numberToObject);
+                const source = Readable.from(arr);
                 const increaseBy10 = async (item: { a: number }) => {
-                    if (item.a === 3) throw Error('aaaaa');
+                    if (item.a === 3) throw Error(DEFAULT_ERROR_TEXT);
                     item.a += 10;
                     modified.push(item);
                 };
                 const sideEffectsTransform = transformer.async.callOnData(increaseBy10);
-                const b = a.pipe(sideEffectsTransform);
+                source.pipe(sideEffectsTransform);
 
                 const result: { a: number }[] = [];
                 const modified: { a: number }[] = [];
-                b.on('data', (data: { a: number }) => result.push(data));
-                b.on('error', () => undefined);
+                sideEffectsTransform.on('data', (data: { a: number }) => result.push(data));
+                sideEffectsTransform.on('error', () => undefined);
 
-                await expect(b.promisifyEvents(['end', 'close'], ['error'])).rejects.toThrow(Error('aaaaa'));
+                await expect(sideEffectsTransform.promisifyEvents(['end', 'close'], ['error'])).rejects.toThrow(
+                    Error(DEFAULT_ERROR_TEXT),
+                );
             });
         });
     });

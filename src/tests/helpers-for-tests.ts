@@ -1,12 +1,7 @@
 import { Stream } from 'stream';
+import { BaseTransform } from '../streams/transforms/base/base-transform';
 import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-transform';
 import { SimpleTransform } from '../streams/transforms/base/simple-transform';
-
-describe('asdf', () => {
-    it('should run', () => {
-        expect(1).toBeTruthy();
-    });
-});
 
 export async function sleep(n: number) {
     return new Promise((res) => setTimeout(res, n));
@@ -56,6 +51,11 @@ export function delayerMult2(delay: number) {
         return num * 2;
     };
 }
+
+export function add(n: number) {
+    return (chunk: number) => chunk + 1;
+}
+
 export function failOnOddsSync(n: number) {
     if (n % 2 === 0) {
         throw Error(DEFAULT_ERROR_TEXT);
@@ -96,7 +96,7 @@ export function noop(...args: any[]) {
 }
 
 export async function streamToArray<TSource, TDestination>(
-    transform: SimpleTransform<TSource, TDestination> | SimpleAsyncTransform<TSource, TDestination>,
+    transform: BaseTransform<TSource, TDestination>,
 ) {
     const arr: TDestination[] = [];
     for await (const chunk of transform) {

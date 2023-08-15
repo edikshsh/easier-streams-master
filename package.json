@@ -1,39 +1,39 @@
 {
-  "name": "easier-streams",
-  "version": "0.0.2",
-  "description": "make it easier to work with streams",
-  "main": "index.js",
-  "scripts": {
-    "test": "jest ./src",
-    "test2": "jest ./src/__tests__/test-transforms-helper.spec.ts",
-    "tsc": "tsc",
-    "config:jest": "ts-jest config:init"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "easier-streams-file": "file:./easier-streams/easier-streams-0.1.4.tgz",
-    "lodash": "^4.17.21",
-    "lodash.clonedeep": "^4.5.0",
-    "npm": "^8.19.2",
-    "uuid": "^9.0.0"
-  },
-  "devDependencies": {
-    "@types/jest": "^27.0.6",
-    "@types/lodash": "^4.14.186",
-    "@types/lodash.clonedeep": "^4.5.7",
-    "@types/node": "^18.11.18",
-    "@types/uuid": "^8.3.4",
-    "@typescript-eslint/eslint-plugin": "^5.39.0",
-    "@typescript-eslint/parser": "^5.48.1",
-    "eslint": "^8.25.0",
-    "eslint-config-standard-with-typescript": "^23.0.0",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-n": "^15.3.0",
-    "eslint-plugin-promise": "^6.0.1",
-    "jest": "^27.0.6",
-    "prettier": "^2.8.3",
-    "ts-jest": "^27.0.6",
-    "typescript": "4.9.4"
-  }
+    "name": "easier-streams",
+    "version": "0.0.2",
+    "description": "make it easier to work with streams",
+    "main": "index.js",
+    "scripts": {
+        "test": "jest ./src",
+        "test2": "jest ./src/__tests__/test-transformer.spec.ts",
+        "tsc": "tsc",
+        "config:jest": "ts-jest config:init"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "easier-streams-file": "file:./easier-streams/easier-streams-0.1.4.tgz",
+        "lodash": "^4.17.21",
+        "lodash.clonedeep": "^4.5.0",
+        "npm": "^8.19.2",
+        "uuid": "^9.0.0"
+    },
+    "devDependencies": {
+        "@types/jest": "^27.0.6",
+        "@types/lodash": "^4.14.186",
+        "@types/lodash.clonedeep": "^4.5.7",
+        "@types/node": "^18.11.18",
+        "@types/uuid": "^8.3.4",
+        "@typescript-eslint/eslint-plugin": "^5.39.0",
+        "@typescript-eslint/parser": "^5.48.1",
+        "eslint": "^8.25.0",
+        "eslint-config-standard-with-typescript": "^23.0.0",
+        "eslint-plugin-import": "^2.26.0",
+        "eslint-plugin-n": "^15.3.0",
+        "eslint-plugin-promise": "^6.0.1",
+        "jest": "^27.0.6",
+        "prettier": "^2.8.3",
+        "ts-jest": "^27.0.6",
+        "typescript": "4.9.4"
+    }
 }

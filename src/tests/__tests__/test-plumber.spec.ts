@@ -1,11 +1,7 @@
 import { Plumber, plumber } from '../../streams/plumber';
 import { TypedPassThrough } from '../../streams/transforms/utility/typed-pass-through';
 import { transformer } from '../../streams/transformer';
-import { pipeline } from 'stream/promises';
-import { pipeline as pipelineCallback } from 'stream';
-import { PassThrough, Readable, Transform, TransformCallback } from 'stream';
-import { SOURCE_ERROR } from '../../streams/transforms/typed-transform/transform-events.type';
-import { DEFAULT_ERROR_TEXT, getFailOnNumberFunction } from '../helpers-for-tests';
+import { DEFAULT_ERROR_TEXT, failOnOddsSync, getFailOnNumberFunction } from '../helpers-for-tests';
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;
@@ -13,12 +9,6 @@ describe('pipeHelper', () => {
     let destinationTransform: TypedPassThrough<number>;
     let destinationTransforms: TypedPassThrough<number>[];
     let sourceData: number[];
-    const errorOnEvenFunc = (n: number) => {
-        if (n % 2 === 0) {
-            throw Error(DEFAULT_ERROR_TEXT);
-        }
-        return n;
-    };
 
     beforeEach(() => {
         sourceData = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -43,7 +33,7 @@ describe('pipeHelper', () => {
 
         it('should pass error data', async () => {
             const errorStream = transformer.errorTransform<number>();
-            const source = sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { shouldPushErrorsForward: true }));
+            const source = sourceTransform.pipe(transformer.fromFunction(failOnOddsSync, { shouldPushErrorsForward: true }));
             plumber.pipeOneToOne(source, destinationTransform, { errorStream });
 
             const result: number[] = [];
@@ -57,7 +47,7 @@ describe('pipeHelper', () => {
         });
 
         it('should error correctly when not piped to error stream', async () => {
-            const source = sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc));
+            const source = sourceTransform.pipe(transformer.fromFunction(failOnOddsSync));
             plumber.pipeOneToOne(source, destinationTransform);
 
             const promise = Promise.all([
@@ -83,7 +73,7 @@ describe('pipeHelper', () => {
 
         it('should pass error data', async () => {
             const errorStream = transformer.errorTransform<number>();
-            const source = sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { shouldPushErrorsForward: true }));
+            const source = sourceTransform.pipe(transformer.fromFunction(failOnOddsSync, { shouldPushErrorsForward: true }));
             plumber.pipeOneToMany(source, destinationTransforms, { errorStream });
 
             const result: number[] = [];
@@ -117,7 +107,7 @@ describe('pipeHelper', () => {
         it('should pass error data', async () => {
             const errorStream = transformer.errorTransform<number>();
             const sources = sourceTransforms.map((sourceTransform) =>
-                sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { shouldPushErrorsForward: true })),
+                sourceTransform.pipe(transformer.fromFunction(failOnOddsSync, { shouldPushErrorsForward: true })),
             );
             plumber.pipeManyToOne(sources, destinationTransform, { errorStream });
 
@@ -137,7 +127,7 @@ describe('pipeHelper', () => {
 
         it('should error correctly when not piped to error stream', async () => {
             const sources = sourceTransforms.map((sourceTransform) =>
-                sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc)),
+                sourceTransform.pipe(transformer.fromFunction(failOnOddsSync)),
             );
             plumber.pipeManyToOne(sources, destinationTransform);
             destinationTransform.on('data', () => undefined);
@@ -165,7 +155,7 @@ describe('pipeHelper', () => {
         it('should pass error data', async () => {
             const errorStream = transformer.errorTransform<number>();
             const sources = sourceTransforms.map((sourceTransform) =>
-                sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { shouldPushErrorsForward: true })),
+                sourceTransform.pipe(transformer.fromFunction(failOnOddsSync, { shouldPushErrorsForward: true })),
             );
             plumber.pipeManyToMany(sources, destinationTransforms, { errorStream });
 
