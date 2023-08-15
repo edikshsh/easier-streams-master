@@ -1,11 +1,11 @@
-import { Plumber, plumber } from '../streams/plumber';
-import { TypedPassThrough } from '../streams/transforms/utility/typed-pass-through';
-import { transformer } from '../streams/transformer';
+import { Plumber, plumber } from '../../streams/plumber';
+import { TypedPassThrough } from '../../streams/transforms/utility/typed-pass-through';
+import { transformer } from '../../streams/transformer';
 import { pipeline } from 'stream/promises';
 import { pipeline as pipelineCallback } from 'stream';
 import { PassThrough, Readable, Transform, TransformCallback } from 'stream';
-import { SOURCE_ERROR } from '../streams/transforms/typed-transform/transform-events.type';
-import { DEFAULT_ERROR_TEXT, getFailOnNumberFunction } from './helpers-for-tests';
+import { SOURCE_ERROR } from '../../streams/transforms/typed-transform/transform-events.type';
+import { DEFAULT_ERROR_TEXT, getFailOnNumberFunction } from '../helpers-for-tests';
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;

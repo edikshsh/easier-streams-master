@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
-import { plumber } from '../streams/plumber';
-import { transformer } from '../streams/transformer';
+import { plumber } from '../../streams/plumber';
+import { transformer } from '../../streams/transformer';
 import {
     DEFAULT_ERROR_TEXT,
     delayer,
@@ -13,7 +13,7 @@ import {
     sleep,
     streamEnd,
     streamToArray,
-} from './helpers-for-tests';
+} from '../helpers-for-tests';
 
 describe('Test Utility transforms', () => {
     describe('callOnData', () => {
