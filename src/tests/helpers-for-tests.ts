@@ -1,12 +1,5 @@
-import { Stream } from 'stream';
-import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-transform';
-import { SimpleTransform } from '../streams/transforms/base/simple-transform';
-
-describe('asdf', () => {
-    it('should run', () => {
-        expect(1).toBeTruthy();
-    });
-});
+import {Stream, Transform} from 'stream';
+import { BaseTransform } from '../streams/transforms/base/base-transform';
 
 export async function sleep(n: number) {
     return new Promise((res) => setTimeout(res, n));
@@ -56,6 +49,15 @@ export function delayerMult2(delay: number) {
         return num * 2;
     };
 }
+
+export function add(n: number) {
+    return (chunk: number) => chunk + n;
+}
+
+export function addAsync(n: number) {
+    return async (chunk: number) => chunk + n;
+}
+
 export function failOnOddsSync(n: number) {
     if (n % 2 === 0) {
         throw Error(DEFAULT_ERROR_TEXT);
@@ -95,14 +97,25 @@ export function noop(...args: any[]) {
     return undefined;
 }
 
-export async function streamToArray<TSource, TDestination>(
-    transform: SimpleTransform<TSource, TDestination> | SimpleAsyncTransform<TSource, TDestination>,
-) {
+export async function streamToArray<TSource, TDestination>(transform: BaseTransform<TSource, TDestination> | Transform) {
     const arr: TDestination[] = [];
     for await (const chunk of transform) {
         arr.push(chunk);
     }
     return arr;
 }
+
+export function numberToString(n: number) {
+    return n.toString();
+}
+
+export async function numberToStringAsync(n: number) {
+    return numberToString(n);
+}
+
+export function range(len: number, start = 0){
+    return [...new Array(len)].map(() => start++)
+}
+
 
 export const DEFAULT_ERROR_TEXT = 'asdf';

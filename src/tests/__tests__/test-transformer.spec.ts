@@ -3,6 +3,8 @@ import { pipeline } from 'stream/promises';
 import { plumber } from '../../streams/plumber';
 import { transformer } from '../../streams/transformer';
 import {
+    add,
+    addAsync,
     DEFAULT_ERROR_TEXT,
     delayer,
     delayerMult2,
@@ -10,178 +12,148 @@ import {
     filterOutOddsSync,
     getFailOnNumberAsyncFunctionMult2,
     getFailOnNumberFunction,
+    noop,
+    range,
     sleep,
     streamEnd,
     streamToArray,
 } from '../helpers-for-tests';
+import { StreamError } from '../../streams/errors/stream-error';
 
 describe('Test Utility transforms', () => {
     describe('callOnData', () => {
+        const numberToObject = (n: number) => ({
+            a: n,
+        });
         describe('sync', () => {
             it('should not modify the original chunk', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map((item) => {
-                    return { a: item };
-                });
-                const a = Readable.from(arr);
+                const arr = range(8, 1).map(numberToObject);
+                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map(numberToObject);
+
+                const source = Readable.from(arr);
                 const increaseBy10 = (item: { a: number }) => {
                     item.a += 10;
                     modified.push(item);
                 };
                 const sideEffectsTransform = transformer.callOnData(increaseBy10);
-                const b = a.pipe(sideEffectsTransform);
+                source.pipe(sideEffectsTransform);
 
-                const result: { a: number }[] = [];
                 const modified: { a: number }[] = [];
-                b.on('data', (data: { a: number }) => result.push(data));
+                const result = await streamToArray(sideEffectsTransform);
 
-                await streamEnd(b);
                 expect(result).toEqual(arr);
                 expect(modified).toEqual(expectedModifiedArr);
             });
 
             it('handles errors from side effects', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const a = Readable.from(arr);
+                const arr = range(8, 1).map(numberToObject);
+                const source = Readable.from(arr);
                 const increaseBy10 = (item: { a: number }) => {
-                    if (item.a === 3) throw Error('aaaaa');
+                    if (item.a === 3) throw Error(DEFAULT_ERROR_TEXT);
                     item.a += 10;
-                    modified.push(item);
                 };
                 const sideEffectsTransform = transformer.callOnData(increaseBy10);
-                const pt = transformer.passThrough<{ a: number }>();
-                const b = a.pipe(sideEffectsTransform).pipe(pt);
+                const destination = transformer.passThrough<{ a: number }>();
+                source.pipe(sideEffectsTransform).pipe(destination);
 
                 const result: { a: number }[] = [];
-                const modified: { a: number }[] = [];
-                b.on('data', (data: { a: number }) => result.push(data));
+                destination.on('data', (data: { a: number }) => result.push(data));
                 await expect(sideEffectsTransform.promisifyEvents(['end', 'close'], ['error'])).rejects.toThrow(
-                    Error('aaaaa'),
+                    Error(DEFAULT_ERROR_TEXT),
                 );
             });
         });
         describe('async', () => {
             it('should not modify the original chunk', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map((item) => {
-                    return { a: item };
-                });
-                const a = Readable.from(arr);
+                const arr = range(8, 1).map(numberToObject);
+                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map(numberToObject);
+                const source = Readable.from(arr);
+                const modified: { a: number }[] = [];
                 const increaseBy10 = async (item: { a: number }) => {
                     item.a += 10;
                     modified.push(item);
                 };
                 const sideEffectsTransform = transformer.async.callOnData(increaseBy10);
-                const b = a.pipe(sideEffectsTransform);
+                source.pipe(sideEffectsTransform);
 
-                const result: { a: number }[] = [];
-                const modified: { a: number }[] = [];
-                b.on('data', (data: { a: number }) => result.push(data));
+                const result = await streamToArray(sideEffectsTransform);
 
-                await streamEnd(b);
                 expect(result).toEqual(arr);
                 expect(modified).toEqual(expectedModifiedArr);
             });
 
             it('Should await call on data to finish before ending stream', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map((item) => {
-                    return { a: item };
-                });
-                const a = Readable.from(arr);
+                const arr = range(8, 1).map(numberToObject);
+                const expectedModifiedArr = [11, 12, 13, 14, 15, 16, 17, 18].map(numberToObject);
+                const source = Readable.from(arr);
+                const modified: { a: number }[] = [];
                 const increaseBy10 = async (item: { a: number }) => {
-                    await new Promise((res) => setTimeout(res, 100));
+                    await sleep(10);
                     item.a += 10;
                     modified.push(item);
                 };
                 const sideEffectsTransform = transformer.async.callOnData(increaseBy10);
-                const b = a.pipe(sideEffectsTransform);
+                source.pipe(sideEffectsTransform);
 
-                const result: { a: number }[] = [];
-                const modified: { a: number }[] = [];
-                b.on('data', (data) => result.push(data));
+                const result = await streamToArray(sideEffectsTransform);
 
-                await streamEnd(b);
                 expect(result).toEqual(arr);
                 expect(modified).toEqual(expectedModifiedArr);
             });
 
             it('handles errors from side effects', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
-                    return { a: item };
-                });
-                const a = Readable.from(arr);
+                const arr = range(8, 1).map(numberToObject);
+                const source = Readable.from(arr);
                 const increaseBy10 = async (item: { a: number }) => {
-                    if (item.a === 3) throw Error('aaaaa');
+                    if (item.a === 3) throw Error(DEFAULT_ERROR_TEXT);
                     item.a += 10;
-                    modified.push(item);
                 };
                 const sideEffectsTransform = transformer.async.callOnData(increaseBy10);
-                const b = a.pipe(sideEffectsTransform);
+                source.pipe(sideEffectsTransform);
 
-                const result: { a: number }[] = [];
-                const modified: { a: number }[] = [];
-                b.on('data', (data: { a: number }) => result.push(data));
-                b.on('error', () => undefined);
-
-                await expect(b.promisifyEvents(['end', 'close'], ['error'])).rejects.toThrow(Error('aaaaa'));
+                await expect(streamToArray(sideEffectsTransform)).rejects.toThrow(Error(DEFAULT_ERROR_TEXT));
             });
         });
     });
 
     describe('filter', () => {
         it('should filter out correctly', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const filterOutOdds = (n: number) => n % 2 === 0;
-            const b = a.pipe(transformer.filter(filterOutOdds));
+            const source = Readable.from(range(8, 1));
+            const filterTransform = source.pipe(transformer.filter(filterOutOddsSync));
 
-            const result: number[] = [];
-            b.on('data', (data: number) => result.push(data));
-
-            await streamEnd(b);
+            const result = await streamToArray(filterTransform);
             expect(result).toEqual([2, 4, 6, 8]);
         });
 
         it('should filter out on crash when considerErrorAsFilterOut is true', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-
-            const b = a.pipe(transformer.filter(filterOutOddsSync, { considerErrorAsFilterOut: true }));
-
-            const result: number[] = [];
-            b.on('data', (data: number) => result.push(data));
-
-            await streamEnd(b);
+            const source = Readable.from(range(8, 1));
+            const filterTransform = source.pipe(
+                transformer.filter(filterOutOddsSync, { considerErrorAsFilterOut: true }),
+            );
+            const result = await streamToArray(filterTransform);
             expect(result).toEqual([2, 4, 6, 8]);
         });
 
         it('should crash on error when considerErrorAsFilterOut is false', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = Readable.from(range(8, 1));
             const filterOutOdds = (n: number) => {
                 if (n % 2 === 0) {
                     throw Error(DEFAULT_ERROR_TEXT);
                 }
                 return true;
             };
-            const b = a.pipe(transformer.filter(filterOutOdds, { considerErrorAsFilterOut: false }));
+            const filterTransform = source.pipe(transformer.filter(filterOutOdds, { considerErrorAsFilterOut: false }));
 
             const result: number[] = [];
-            b.on('data', (data: number) => result.push(data));
+            filterTransform.on('data', (data: number) => result.push(data));
 
-            const streamPromise = streamEnd(b);
+            const streamPromise = streamEnd(filterTransform);
             await expect(streamPromise).rejects.toThrow(DEFAULT_ERROR_TEXT);
             expect(result).toEqual([1]);
         });
 
         it('should pass error if given error stream', async () => {
-            const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = transformer.fromIterable(range(8, 1));
             const errorStream = transformer.errorTransform<number>();
             const passThrough = transformer.passThrough<number>();
             const filterOutOdds = (n: number) => {
@@ -191,17 +163,15 @@ describe('Test Utility transforms', () => {
                 return true;
             };
 
-            const b = transformer.filter(filterOutOdds, { shouldPushErrorsForward: true });
+            const filterTransform = transformer.filter(filterOutOdds, { shouldPushErrorsForward: true });
 
-            plumber.pipe({}, a, b);
-            plumber.pipe({ errorStream }, b, passThrough);
-            passThrough.on('data', () => undefined);
-            const result: number[] = [];
+            plumber.pipe({}, source, filterTransform);
+            plumber.pipe({ errorStream }, filterTransform, passThrough);
+
             const errors: number[] = [];
-            passThrough.on('data', (data: number) => result.push(data));
             errorStream.on('data', (error) => errors.push(error.data));
+            const result = (await Promise.all([streamToArray(passThrough), streamEnd(errorStream)]))[0];
 
-            await Promise.all([streamEnd(b), streamEnd(errorStream)]);
             expect(result).toEqual([2, 4, 6, 8]);
             expect(errors).toEqual([1, 3, 5, 7]);
         });
@@ -210,11 +180,11 @@ describe('Test Utility transforms', () => {
     describe('counter', () => {
         describe('sync', () => {
             it('should pass all data without change', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8];
-                const readable = Readable.from(arr);
-                // const filterOutOdds = (n: number) => n % 2 === 0;
+                const arr = range(8, 1);
+                const source = Readable.from(arr);
+
                 const { transform: counterTransform } = transformer.counter();
-                readable.pipe(counterTransform);
+                source.pipe(counterTransform);
 
                 const result = await streamToArray(counterTransform);
 
@@ -222,7 +192,7 @@ describe('Test Utility transforms', () => {
             });
 
             it('should count the number of chunks passed correctly', async () => {
-                const readable = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+                const readable = Readable.from(range(8, 1));
                 // const filterOutOdds = (n: number) => n % 2 === 0;
                 const { transform: counterTransform, getCounter } = transformer.counter();
                 readable.pipe(counterTransform);
@@ -232,21 +202,19 @@ describe('Test Utility transforms', () => {
             });
 
             it('should count the number of chunks passed correctly when given a non default counter function', async () => {
-                const readable = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-                const countOnlyOdds = (n: number) => n % 2 === 0;
-                const { transform: counterTransform, getCounter } = transformer.counter(countOnlyOdds);
-                readable.pipe(counterTransform);
+                const source = Readable.from(range(8, 1));
+                const { transform: counterTransform, getCounter } = transformer.counter(filterOutOddsSync);
+                source.pipe(counterTransform);
 
                 await streamToArray(counterTransform);
                 expect(getCounter()).toEqual(4);
             });
 
             it('should pass all data even when given a non default counter function', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8];
-                const readable = Readable.from(arr);
-                const countOnlyOdds = (n: number) => n % 2 === 0;
-                const { transform: counterTransform } = transformer.counter(countOnlyOdds);
-                readable.pipe(counterTransform);
+                const arr = range(8, 1);
+                const source = Readable.from(arr);
+                const { transform: counterTransform } = transformer.counter(filterOutOddsSync);
+                source.pipe(counterTransform);
 
                 const result = await streamToArray(counterTransform);
 
@@ -255,26 +223,20 @@ describe('Test Utility transforms', () => {
         });
 
         describe('async', () => {
-            const countOnlyOddsAsync = async (n: number) => {
-                await sleep(10);
-                return n % 2 === 0;
-            };
-
             it('should count the number of chunks passed correctly when given a non default counter function', async () => {
-                const readable = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-                const countOnlyOdds = (n: number) => n % 2 === 0;
-                const { transform: counterTransform, getCounter } = transformer.async.counter(countOnlyOddsAsync);
-                readable.pipe(counterTransform);
+                const source = Readable.from(range(8, 1));
+                const { transform: counterTransform, getCounter } = transformer.async.counter(filterOutOddsAsync(10));
+                source.pipe(counterTransform);
 
                 await streamToArray(counterTransform);
                 expect(getCounter()).toEqual(4);
             });
 
             it('should pass all data even when given a non default counter function', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8];
-                const readable = Readable.from(arr);
-                const { transform: counterTransform } = transformer.async.counter(countOnlyOddsAsync);
-                readable.pipe(counterTransform);
+                const arr = range(8, 1);
+                const source = Readable.from(arr);
+                const { transform: counterTransform } = transformer.async.counter(filterOutOddsAsync(10));
+                source.pipe(counterTransform);
 
                 const result = await streamToArray(counterTransform);
 
@@ -287,9 +249,9 @@ describe('Test Utility transforms', () => {
         it('should pass kept values to one stream, and discard values to another', async () => {
             const keptValues: number[] = [];
             const filteredValues: number[] = [];
-            const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = transformer.fromIterable(range(8, 1));
             const { filterFalseTransform, filterTrueTransform } = transformer.fork(filterOutOddsSync);
-            plumber.pipe({}, a, [filterFalseTransform, filterTrueTransform]);
+            plumber.pipe({}, source, [filterFalseTransform, filterTrueTransform]);
 
             filterTrueTransform.on('data', (evenNumber) => keptValues.push(evenNumber));
             filterFalseTransform.on('data', (oddNumber) => filteredValues.push(oddNumber));
@@ -303,103 +265,103 @@ describe('Test Utility transforms', () => {
 
     describe('filterType', () => {
         it('should filter out by type correctly', async () => {
-            const a = Readable.from([1, '2', 3, '4', 5, '6', 7, '8']);
+            const source = Readable.from([1, '2', 3, '4', 5, '6', 7, '8']);
             function isNumber(n: unknown): n is number {
                 return typeof n === 'number';
             }
-            const b = a.pipe(transformer.typeFilter(isNumber));
+            const typeFilterTransform = source.pipe(transformer.typeFilter(isNumber));
 
             const result: number[] = [];
-            b.on('data', (data: number) => result.push(data));
+            typeFilterTransform.on('data', (data: number) => result.push(data));
 
-            await streamEnd(b);
+            await streamEnd(typeFilterTransform);
             expect(result).toEqual([1, 3, 5, 7]);
         });
     });
 
     describe('asyncFilter', () => {
         it('should filter out correctly', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = Readable.from(range(8, 1));
             const filterOutOdds = async (n: number) => n % 2 === 0;
-            const b = a.pipe(transformer.async.filter(filterOutOdds));
+            const filterTransform = source.pipe(transformer.async.filter(filterOutOdds));
 
-            const result: number[] = [];
-            b.on('data', (data: number) => result.push(data));
-
-            await streamEnd(b);
+            const result = await streamToArray(filterTransform);
             expect(result).toEqual([2, 4, 6, 8]);
         });
 
         it('should filter out on crash when considerErrorAsFilterOut is true', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = Readable.from(range(8, 1));
 
-            const b = a.pipe(transformer.async.filter(filterOutOddsAsync(), { considerErrorAsFilterOut: true }));
+            const filterTransform = source.pipe(
+                transformer.async.filter(filterOutOddsAsync(), { considerErrorAsFilterOut: true }),
+            );
 
-            const result: number[] = [];
-            b.on('data', (data: number) => result.push(data));
-
-            await streamEnd(b);
+            const result = await streamToArray(filterTransform);
             expect(result).toEqual([2, 4, 6, 8]);
         });
 
         it('should crash on error when considerErrorAsFilterOut is false', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = Readable.from(range(8, 1));
             const filterOutOdds = async (n: number) => {
                 if (n % 2 === 0) {
                     throw Error(DEFAULT_ERROR_TEXT);
                 }
                 return true;
             };
-            const b = a.pipe(transformer.async.filter(filterOutOdds, { considerErrorAsFilterOut: false }));
+            const filterTransform = source.pipe(
+                transformer.async.filter(filterOutOdds, { considerErrorAsFilterOut: false }),
+            );
 
             const result: number[] = [];
-            b.on('data', (data: number) => result.push(data));
+            filterTransform.on('data', (data: number) => result.push(data));
 
-            const streamPromise = streamEnd(b);
-            await expect(streamPromise).rejects.toThrow(DEFAULT_ERROR_TEXT);
+            await expect(streamEnd(filterTransform)).rejects.toThrow(DEFAULT_ERROR_TEXT);
             expect(result).toEqual([1]);
         });
 
         it('should pass error if given error stream', async () => {
             const errorStream = transformer.errorTransform<number>();
-            const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = transformer.fromIterable(range(8, 1));
             const passThrough = transformer.passThrough<number>();
             const filterOutOdds = async (n: number) => {
-                if (n % 2 === 1) {
+                if (n % 2 === 0) {
                     throw Error(DEFAULT_ERROR_TEXT);
                 }
                 return true;
             };
 
-            const b = transformer.async.filter(filterOutOdds, { shouldPushErrorsForward: true });
-            const result: number[] = [];
+            const filterTransform = transformer.async.filter(filterOutOdds, { shouldPushErrorsForward: true });
+            // const result: number[] = [];
             const errors: number[] = [];
-            passThrough.on('data', (data: number) => result.push(data));
+            // passThrough.on('data', (data: number) => result.push(data));
             errorStream.on('data', (error) => {
                 errors.push(error.data);
             });
 
-            plumber.pipe({ errorStream }, a, b, passThrough);
+            plumber.pipe({ errorStream }, source, filterTransform, passThrough);
 
-            await Promise.all([streamEnd(passThrough), streamEnd(errorStream)]);
-            expect(result).toEqual([2, 4, 6, 8]);
-            expect(errors).toEqual([1, 3, 5, 7]);
+            const result = (await Promise.all([streamToArray(passThrough), streamEnd(errorStream)]))[0];
+            expect(errors).toEqual([2, 4, 6, 8]);
+            expect(result).toEqual([1, 3, 5, 7]);
         });
     });
 
     describe('asyncFork', () => {
         it('should pass kept values to one stream, and discard values to another', async () => {
-            const keptValues: number[] = [];
-            const filteredValues: number[] = [];
-            const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+            // const keptValues: number[] = [];
+            // const filteredValues: number[] = [];
+            const source = transformer.fromIterable(range(8, 1));
             const filterOutOdds = async (n: number) => n % 2 === 0;
             const { filterFalseTransform, filterTrueTransform } = transformer.async.fork(filterOutOdds);
-            plumber.pipe({}, a, [filterFalseTransform, filterTrueTransform]);
+            plumber.pipe({}, source, [filterFalseTransform, filterTrueTransform]);
 
-            filterTrueTransform.on('data', (evenNumber) => keptValues.push(evenNumber));
-            filterFalseTransform.on('data', (oddNumber) => filteredValues.push(oddNumber));
+            // filterTrueTransform.on('data', (evenNumber) => keptValues.push(evenNumber));
+            // filterFalseTransform.on('data', (oddNumber) => filteredValues.push(oddNumber));
 
-            await Promise.all([streamEnd(filterTrueTransform), streamEnd(filterFalseTransform)]);
+            const [keptValues, filteredValues] = await Promise.all([
+                streamToArray(filterTrueTransform),
+                streamToArray(filterFalseTransform),
+            ]);
 
             expect(keptValues).toEqual([2, 4, 6, 8]);
             expect(filteredValues).toEqual([1, 3, 5, 7]);
@@ -408,96 +370,76 @@ describe('Test Utility transforms', () => {
 
     describe('void', () => {
         it('should throw away all data', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const b = a.pipe(transformer.void());
+            const source = Readable.from(range(8, 1));
+            const voidTransform = source.pipe(transformer.void());
 
-            const result: void[] = [];
-            b.on('data', (data) => result.push(data));
-
-            await streamEnd(b);
+            const result = await streamToArray(voidTransform);
             expect(result).toEqual([]);
         });
     });
 
     describe('arrayJoin', () => {
         it('should join input into arrays of correct length', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6]);
-            const b = a.pipe(transformer.arrayJoin<number>(3, { objectMode: true }));
+            const source = Readable.from([1, 2, 3, 4, 5, 6]);
+            const arrayJoiner = source.pipe(transformer.arrayJoin<number>(3, { objectMode: true }));
 
-            const result: number[][] = [];
-            b.on('data', (data: number[]) => result.push(data));
-
-            await streamEnd(b);
+            const result = await streamToArray(arrayJoiner);
             expect(result).toEqual([
                 [1, 2, 3],
                 [4, 5, 6],
             ]);
         });
         it('should flush remaining data even if array is not full', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7]);
-            const b = a.pipe(transformer.arrayJoin<number>(3, { objectMode: true }));
+            const source = Readable.from([1, 2, 3, 4, 5, 6, 7]);
+            const arrayJoiner = source.pipe(transformer.arrayJoin<number>(3, { objectMode: true }));
 
-            const result: number[][] = [];
-            b.on('data', (data: number[]) => result.push(data));
-
-            await streamEnd(b);
+            const result = await streamToArray(arrayJoiner);
             expect(result).toEqual([[1, 2, 3], [4, 5, 6], [7]]);
         });
     });
 
     describe('arraySplit', () => {
         it('should split array correctly', async () => {
-            const a = Readable.from([
+            const source = Readable.from([
                 [1, 2, 3],
                 [4, 5, 6],
                 [7, 8],
             ]);
-            const b = a.pipe(transformer.arraySplit<number>({ objectMode: true }));
+            const arraySplitter = source.pipe(transformer.arraySplit<number>({ objectMode: true }));
 
-            const result: number[] = [];
-            b.on('data', (data: number) => result.push(data));
-
-            await streamEnd(b);
-            expect(result).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+            const result = await streamToArray(arraySplitter);
+            expect(result).toEqual(range(8, 1));
         });
     });
 
     describe('fromFunction', () => {
         it('creates a typed transform from function', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const add1 = (n: number) => n + 1;
-            const add1Transform = transformer.fromFunction(add1, { objectMode: true });
+            const source = Readable.from(range(8, 1));
+            const add1Transform = transformer.fromFunction(add(1), { objectMode: true });
 
-            a.pipe(add1Transform);
+            source.pipe(add1Transform);
 
-            const result: number[] = [];
-            add1Transform.on('data', (data) => result.push(data));
-
-            await streamEnd(add1Transform);
+            const result = await streamToArray(add1Transform);
             expect(result).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
         });
 
         it('pipes created transforms correctly', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const add1 = (n: number) => n + 1;
+            const source = Readable.from(range(8, 1));
             const filterOutOdds = (n: number) => (n % 2 ? n : undefined);
             const numberToString = (n: number) => n.toString();
 
-            const add1Transform = transformer.fromFunction(add1);
+            const add1Transform = transformer.fromFunction(add(1));
             const filterOutOddsTranform = transformer.fromFunction(filterOutOdds);
             const numberToStringTrasnform = transformer.fromFunction(numberToString);
 
-            a.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
+            source.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
 
-            const result: string[] = [];
-            numberToStringTrasnform.on('data', (data) => result.push(data));
-
-            await streamEnd(numberToStringTrasnform);
+            const result = await streamToArray(numberToStringTrasnform);
             expect(result).toEqual(['3', '5', '7', '9']);
         });
 
         it('passes errors to error stream instead of closing if given an error stream', async () => {
-            const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = transformer.fromIterable(range(8, 1));
             const errorStream = transformer.errorTransform<number>();
             const add1WithError = (n: number) => {
                 if (n % 2 === 0) {
@@ -507,50 +449,40 @@ describe('Test Utility transforms', () => {
             };
             const add1Transform = transformer.fromFunction(add1WithError, { shouldPushErrorsForward: true });
 
-            plumber.pipeOneToOne(a, add1Transform);
+            plumber.pipeOneToOne(source, add1Transform);
             const passThrough = transformer.passThrough<number>();
             plumber.pipeOneToOne(add1Transform, passThrough, { errorStream });
-            passThrough.on('data', () => undefined);
 
-            const result: number[] = [];
-            const errorResulst: number[] = [];
-            passThrough.on('data', (data) => result.push(data));
-            errorStream.on('data', (data) => errorResulst.push(data.data));
-
-            await Promise.all([streamEnd(add1Transform), streamEnd(errorStream)]);
+            const [result, errorResults] = await Promise.all([streamToArray(passThrough), streamToArray(errorStream)]);
+            const errorExtractedValues = errorResults.map((result) => (result as StreamError<number>).data);
+            expect(errorExtractedValues).toEqual([2, 4, 6, 8]);
             expect(result).toEqual([2, 4, 6, 8]);
-            expect(errorResulst).toEqual([2, 4, 6, 8]);
         });
 
-        it('doesnt pass errors to error stream if given an error stream witohut errors', async () => {
-            const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+        it('doesnt pass errors to error stream if given an error stream without errors', async () => {
+            const source = transformer.fromIterable(range(8, 1));
             const errorStream = transformer.errorTransform<number>();
-            const add1 = (n: number) => n + 1;
-            const add1Transform = transformer.fromFunction(add1, { shouldPushErrorsForward: true });
+            const add1Transform = transformer.fromFunction(add(1), { shouldPushErrorsForward: true });
+            const voidTransform = transformer.void();
+            plumber.pipeOneToOne(source, add1Transform, { errorStream });
+            plumber.pipeOneToOne(add1Transform, voidTransform, { errorStream });
 
-            plumber.pipeOneToOne(a, add1Transform, { errorStream });
-            plumber.pipeOneToOne(add1Transform, transformer.void(), { errorStream });
-
-            const result: number[] = [];
-            const errorResulst: number[] = [];
-            add1Transform.on('data', (data) => result.push(data));
-            errorStream.on('data', (data) => errorResulst.push(data.data));
-
-            await Promise.all([streamEnd(add1Transform), streamEnd(errorStream)]);
+            const [result, errorResults] = await Promise.all([
+                streamToArray(add1Transform),
+                streamToArray(errorStream),
+            ]);
+            const errorExtractedValues = errorResults.map((result) => (result as StreamError<number>).data);
             expect(result).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
-            expect(errorResulst).toEqual([]);
+            expect(errorExtractedValues).toEqual([]);
         });
 
         describe('typedPassThrough', () => {
             it('should pass items correctly', async () => {
-                const arr = [1, 2, 3, 4, 5, 6, 7, 8];
-                const a = Readable.from(arr);
-                const b = a.pipe(transformer.passThrough<number>());
+                const arr = range(8, 1);
+                const source = Readable.from(arr);
+                const typedPassThroughTransform = source.pipe(transformer.passThrough<number>());
 
-                const result: number[] = [];
-                b.on('data', (data: number) => result.push(data));
-
-                await streamEnd(b);
+                const result = await streamToArray(typedPassThroughTransform);
                 expect(result).toEqual(arr);
             });
         });
@@ -558,62 +490,50 @@ describe('Test Utility transforms', () => {
 
     describe('fromAsyncFunction', () => {
         it('creates a typed transform from async function', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const add1 = async (n: number) => n + 1;
-            const add1Transform = transformer.async.fromFunction(add1, { objectMode: true });
+            const source = Readable.from(range(8, 1));
+            const add1Transform = transformer.async.fromFunction(addAsync(1), { objectMode: true });
 
-            a.pipe(add1Transform);
+            source.pipe(add1Transform);
 
-            const result: number[] = [];
-            add1Transform.on('data', (data) => result.push(data));
-
-            await streamEnd(add1Transform);
+            const result = await streamToArray(add1Transform);
             expect(result).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
         });
 
         it('pipes created transforms correctly', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const add1 = async (n: number) => n + 1;
+            const source = Readable.from(range(8, 1));
             const filterOutOdds = async (n: number) => (n % 2 ? n : undefined);
             const numberToString = async (n: number) => n.toString();
 
-            const add1Transform = transformer.async.fromFunction(add1);
-            const filterOutOddsTranform = transformer.async.fromFunction(filterOutOdds);
-            const numberToStringTrasnform = transformer.async.fromFunction(numberToString);
+            const add1Transform = transformer.async.fromFunction(addAsync(1));
+            const filterOutOddsTransform = transformer.async.fromFunction(filterOutOdds);
+            const numberToStringTransform = transformer.async.fromFunction(numberToString);
 
-            a.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
+            source.pipe(add1Transform).pipe(filterOutOddsTransform).pipe(numberToStringTransform);
 
-            const result: string[] = [];
-            numberToStringTrasnform.on('data', (data) => result.push(data));
-
-            await streamEnd(numberToStringTrasnform);
+            const result = await streamToArray(numberToStringTransform);
             expect(result).toEqual(['3', '5', '7', '9']);
         });
 
         it('handles non immediate async functions', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const add1 = async (n: number) => n + 1;
+            const source = Readable.from(range(8, 1));
             const filterOutOdds = async (n: number) => {
                 await new Promise((res) => setTimeout(res, 20));
                 return n % 2 ? n : undefined;
             };
             const numberToString = async (n: number) => n.toString();
 
-            const add1Transform = transformer.async.fromFunction(add1);
+            const add1Transform = transformer.async.fromFunction(addAsync(1));
             const filterOutOddsTranform = transformer.async.fromFunction(filterOutOdds);
             const numberToStringTrasnform = transformer.async.fromFunction(numberToString);
 
-            a.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
+            source.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
 
-            const result: string[] = [];
-            numberToStringTrasnform.on('data', (data) => result.push(data));
-
-            await streamEnd(numberToStringTrasnform);
+            const result = await streamToArray(numberToStringTrasnform);
             expect(result).toEqual(['3', '5', '7', '9']);
         });
 
         it('passes errors to error stream instead of closing if given an error stream', async () => {
-            const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = transformer.fromIterable(range(8, 1));
             const errorStream = transformer.errorTransform<number>();
             const add1WithError = async (n: number) => {
                 if (n % 2 === 0) {
@@ -623,71 +543,59 @@ describe('Test Utility transforms', () => {
             };
             const add1Transform = transformer.async.fromFunction(add1WithError, { shouldPushErrorsForward: true });
 
-            plumber.pipeOneToOne(a, add1Transform);
+            plumber.pipeOneToOne(source, add1Transform);
             const passThrough = transformer.passThrough<number>();
             plumber.pipeOneToOne(add1Transform, passThrough, { errorStream });
-            passThrough.on('data', () => undefined);
+            passThrough.on('data', noop);
 
-            const result: number[] = [];
-            const errorResulst: number[] = [];
-            passThrough.on('data', (data) => result.push(data));
-            errorStream.on('data', (data) => errorResulst.push(data.data));
-
-            await Promise.all([streamEnd(add1Transform), streamEnd(errorStream)]);
+            const [result, errorResult] = await Promise.all([streamToArray(passThrough), streamToArray(errorStream)]);
+            const errorValues = errorResult.map((error) => (error as StreamError<number>).data);
             expect(result).toEqual([2, 4, 6, 8]);
-            expect(errorResulst).toEqual([2, 4, 6, 8]);
+            expect(errorValues).toEqual([2, 4, 6, 8]);
         });
 
         it('doesnt pass errors to error stream if given an error stream witohut errors', async () => {
-            const a = transformer.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+            const source = transformer.fromIterable(range(8, 1));
             const errorStream = transformer.errorTransform<number>();
-            const add1 = async (n: number) => n + 1;
-            const add1Transform = transformer.async.fromFunction(add1, { shouldPushErrorsForward: true });
+            const add1Transform = transformer.async.fromFunction(addAsync(1), { shouldPushErrorsForward: true });
+            const voidTransform = transformer.void();
 
-            plumber.pipeOneToOne(a, add1Transform, { errorStream });
-            plumber.pipeOneToOne(add1Transform, transformer.void(), { errorStream });
+            plumber.pipeOneToOne(source, add1Transform, { errorStream });
+            plumber.pipeOneToOne(add1Transform, voidTransform, { errorStream });
 
-            const result: number[] = [];
-            const errorResulst: number[] = [];
-            add1Transform.on('data', (data) => result.push(data));
-            errorStream.on('data', (data) => errorResulst.push(data.data));
+            // const result: number[] = [];
+            // const errorResulst: number[] = [];
+            // add1Transform.on('data', (data) => result.push(data));
+            // errorStream.on('data', (data) => errorResulst.push(data.data));
+            const [result, errorResult] = await Promise.all([streamToArray(add1Transform), streamToArray(errorStream)]);
 
-            await Promise.all([streamEnd(add1Transform), streamEnd(errorStream)]);
+            // await Promise.all([streamEnd(add1Transform), streamEnd(errorStream)]);
+            const errorValues = errorResult.map((error) => (error as StreamError<number>).data);
             expect(result).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
-            expect(errorResulst).toEqual([]);
+            expect(errorValues).toEqual([]);
         });
     });
 
     describe('void', () => {
         it('should ignore deleted data without blocking the stream', async () => {
-            const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-            const b = a.pipe(transformer.void({ objectMode: true }));
+            const source = Readable.from(range(8, 1));
+            const voidTransform = source.pipe(transformer.void({ objectMode: true }));
 
-            const result: unknown[] = [];
-            b.on('data', (data) => {
-                result.push(data);
-            });
-
-            await streamEnd(b);
+            const result = await streamToArray(voidTransform);
             expect(result).toEqual([]);
         });
     });
 
     describe('pickElementFromArray', () => {
         it('should pick the correct element', async () => {
-            const a = Readable.from([
+            const source = Readable.from([
                 [1, 2, 3],
                 [4, 5, 6],
                 [7, 8],
             ]);
-            const b = a.pipe(transformer.pickElementFromArray<number>(0));
+            const pickFromArrayTransform = source.pipe(transformer.pickElementFromArray<number>(0));
 
-            const result: number[] = [];
-            b.on('data', (data) => {
-                result.push(data);
-            });
-
-            await streamEnd(b);
+            const result = await streamToArray(pickFromArrayTransform);
             expect(result).toEqual([1, 4, 7]);
         });
     });
@@ -717,11 +625,10 @@ describe('Test Utility transforms', () => {
             expect(outArr).toEqual(expectedOutput);
         });
         it('should take less time then running sequentially', async () => {
-            const delay = 20;
+            const delay = 10;
             const inputLength = 100;
             const estimatedRunTimeSequential = delay * inputLength;
             const arr = [...Array(inputLength).keys()];
-            const outArr: number[] = [];
             const startTime = Date.now();
             const concurrency = 5;
 
@@ -729,14 +636,12 @@ describe('Test Utility transforms', () => {
 
             Readable.from(arr).pipe(input);
 
-            output.on('data', (data) => {
-                outArr.push(data);
-            });
+            output.on('data', noop);
             await output.promisifyEvents(['end'], ['error']);
             expect(estimatedRunTimeSequential).toBeGreaterThan(Date.now() - startTime);
         });
         it('should send error to output if one of the concurrent actions fails', async () => {
-            const delay = 20;
+            const delay = 10;
             const inputLength = 100;
             const errorOnIndex = 20;
             const arr = [...Array(inputLength).keys()];
@@ -759,7 +664,7 @@ describe('Test Utility transforms', () => {
         });
 
         it('doesnt break backpressure', async () => {
-            const delay = 20;
+            const delay = 10;
             const inputLength = 100;
             const arr = [...Array(inputLength).keys()];
             const outArr: number[] = [];
@@ -791,11 +696,11 @@ describe('Test Utility transforms', () => {
 
             const concurrency = 5;
 
-            const erroringTranform = transformer.fromFunction(getFailOnNumberFunction(4));
+            const erroringTransform = transformer.fromFunction(getFailOnNumberFunction(4));
             const { input, output } = transformer.async.fromFunctionConcurrent(delayer(delay), concurrency);
 
             const source = transformer.fromIterable(arr);
-            pipeline(source, erroringTranform, input).catch(() => undefined);
+            pipeline(source, erroringTransform, input).catch(() => undefined);
             pipeline(output, transformer.void()).catch(() => undefined);
 
             output.on('data', (data) => {
@@ -814,13 +719,13 @@ describe('Test Utility transforms', () => {
 
             const concurrency = 5;
 
-            const erroringTranform = transformer.fromFunction(getFailOnNumberFunction(4));
+            const erroringTransform = transformer.fromFunction(getFailOnNumberFunction(4));
             const passThrough = transformer.passThrough<number>();
             const { input, output } = transformer.async.fromFunctionConcurrent(delayer(delay), concurrency, {});
 
             const source = Readable.from(arr);
             pipeline(source, input).catch(() => undefined);
-            pipeline(output, erroringTranform, passThrough).catch(() => undefined);
+            pipeline(output, erroringTransform, passThrough).catch(() => undefined);
 
             passThrough.on('data', (data) => {
                 outArr.push(data);
@@ -913,7 +818,6 @@ describe('Test Utility transforms', () => {
             const inputLength = 100;
             const estimatedRunTimeSequential = delay * inputLength;
             const arr = [...Array(inputLength).keys()];
-            const outArr: number[] = [];
             const startTime = Date.now();
 
             const concurrency = 5;
@@ -922,14 +826,12 @@ describe('Test Utility transforms', () => {
 
             Readable.from(arr).pipe(concurrentTransform);
 
-            concurrentTransform.on('data', (data) => {
-                outArr.push(data);
-            });
+            concurrentTransform.on('data', noop);
             await concurrentTransform.promisifyEvents(['end'], ['error']);
             expect(estimatedRunTimeSequential).toBeGreaterThan(Date.now() - startTime);
         });
         it('should send error to output if one of the concurrent actions fails', async () => {
-            const delay = 20;
+            const delay = 10;
             const inputLength = 100;
             const errorOnIndex = 20;
             const arr = [...Array(inputLength).keys()];
@@ -956,14 +858,14 @@ describe('Test Utility transforms', () => {
             const arr = [...Array(inputLength).keys()];
 
             const concurrency = 5;
-            const erroringTranform = transformer.fromFunction(errorOn4);
+            const erroringTransform = transformer.fromFunction(errorOn4);
             const concurrentTransform = transformer.async.fromFunctionConcurrent2(delayer(delay), concurrency);
 
             const source = transformer.fromIterable(arr);
 
-            const p = concurrentTransform.promisifyEvents('close', 'error');
-            pipeline(source, erroringTranform, concurrentTransform).catch(() => undefined);
-            await expect(p).rejects.toThrow(DEFAULT_ERROR_TEXT);
+            const streamDonePromise = concurrentTransform.promisifyEvents('close', 'error');
+            pipeline(source, erroringTransform, concurrentTransform).catch(() => undefined);
+            await expect(streamDonePromise).rejects.toThrow(DEFAULT_ERROR_TEXT);
         });
 
         it('should not break pipeline chain of error passing if error comes after concurrent', async () => {
@@ -973,13 +875,13 @@ describe('Test Utility transforms', () => {
 
             const concurrency = 5;
             const concurrentTransform = transformer.async.fromFunctionConcurrent2(delayer(delay), concurrency);
-            const erroringTranform = transformer.fromFunction(errorOn4);
+            const erroringTransform = transformer.fromFunction(errorOn4);
             const passThrough = transformer.passThrough();
 
             const source = transformer.fromIterable(arr);
             const p = passThrough.promisifyEvents('close', 'error');
 
-            pipeline(source, concurrentTransform, erroringTranform, passThrough).catch(() => undefined);
+            pipeline(source, concurrentTransform, erroringTransform, passThrough).catch(() => undefined);
             await expect(p).rejects.toThrow(DEFAULT_ERROR_TEXT);
         });
 
@@ -1020,7 +922,7 @@ describe('Test Utility transforms', () => {
             concurrentTransform.on('data', (data) => {
                 outArr.push(data);
             });
-            await new Promise<void>((resolve, reject) => readable.on('close', resolve));
+            await new Promise<void>((resolve) => readable.on('close', resolve));
             expect(outArr.length).toBeGreaterThan(inputLength - 50);
             await concurrentTransform.promisifyEvents(['close'], ['error']);
             expect(outArr.length).toBe(300);
@@ -1029,15 +931,10 @@ describe('Test Utility transforms', () => {
 
     describe('fromIterable', () => {
         it('output all data from iterable', async () => {
-            const arr = [1, 2, 3, 4, 5, 6, 7, 8];
-            const b = transformer.fromIterable(arr);
+            const arr = range(8, 1);
+            const fromIterableTransform = transformer.fromIterable(arr);
 
-            const result: number[] = [];
-            b.on('data', (data) => {
-                result.push(data);
-            });
-
-            await streamEnd(b);
+            const result = await streamToArray(fromIterableTransform);
             expect(result).toEqual(arr);
         });
         it('output all data from async generator', async () => {
@@ -1048,37 +945,28 @@ describe('Test Utility transforms', () => {
                     if (i === 9) break;
                 }
             }
-            const b = transformer.fromIterable(asyncGenerator());
+            const fromIterableTransform = transformer.fromIterable(asyncGenerator());
 
-            const result: number[] = [];
-            b.on('data', (data) => {
-                result.push(data);
-            });
-
-            await streamEnd(b);
-            expect(result).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+            const result = await streamToArray(fromIterableTransform);
+            expect(result).toEqual(range(8, 1));
         });
     });
 
     it('Able to mix different transforms in a single stream', async () => {
-        const a = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
-        const add1 = (n: number) => n + 1;
+        const source = Readable.from(range(8, 1));
         const filterOutOdds = async (n: number) => {
-            await new Promise((res) => setTimeout(res, 100));
+            await sleep(10);
             return n % 2 ? n : undefined;
         };
         const numberToString = async (n: number) => n.toString();
 
-        const add1Transform = transformer.fromFunction(add1, { objectMode: true });
-        const filterOutOddsTranform = transformer.async.fromFunction(filterOutOdds, { objectMode: true });
-        const numberToStringTrasnform = transformer.async.fromFunction(numberToString, { objectMode: true });
+        const add1Transform = transformer.fromFunction(add(1), { objectMode: true });
+        const filterOutOddsTransform = transformer.async.fromFunction(filterOutOdds, { objectMode: true });
+        const numberToStringTransform = transformer.async.fromFunction(numberToString, { objectMode: true });
 
-        a.pipe(add1Transform).pipe(filterOutOddsTranform).pipe(numberToStringTrasnform);
+        source.pipe(add1Transform).pipe(filterOutOddsTransform).pipe(numberToStringTransform);
 
-        const result: string[] = [];
-        numberToStringTrasnform.on('data', (data) => result.push(data));
-
-        await streamEnd(numberToStringTrasnform);
+        const result = await streamToArray(numberToStringTransform);
         expect(result).toEqual(['3', '5', '7', '9']);
     });
 });

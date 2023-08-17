@@ -1,11 +1,8 @@
 import { Plumber, plumber } from '../../streams/plumber';
 import { TypedPassThrough } from '../../streams/transforms/utility/typed-pass-through';
 import { transformer } from '../../streams/transformer';
-import { pipeline } from 'stream/promises';
-import { pipeline as pipelineCallback } from 'stream';
-import { PassThrough, Readable, Transform, TransformCallback } from 'stream';
-import { SOURCE_ERROR } from '../../streams/transforms/typed-transform/transform-events.type';
-import { DEFAULT_ERROR_TEXT, getFailOnNumberFunction } from '../helpers-for-tests';
+import {DEFAULT_ERROR_TEXT, failOnOddsSync, getFailOnNumberFunction, range, streamToArray} from '../helpers-for-tests';
+import {StreamError} from "../../streams/errors/stream-error";
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;
@@ -13,51 +10,39 @@ describe('pipeHelper', () => {
     let destinationTransform: TypedPassThrough<number>;
     let destinationTransforms: TypedPassThrough<number>[];
     let sourceData: number[];
-    const errorOnEvenFunc = (n: number) => {
-        if (n % 2 === 0) {
-            throw Error(DEFAULT_ERROR_TEXT);
-        }
-        return n;
-    };
 
     beforeEach(() => {
-        sourceData = [1, 2, 3, 4, 5, 6, 7, 8];
+        sourceData = range(8, 1);
         sourceTransform = transformer.fromIterable(sourceData);
         sourceTransforms = [0, 0].map((_, index) =>
-            transformer.fromIterable([0, 1, 2, 3].map((a) => a + index * 4 + 1)),
+            transformer.fromIterable(range(4).map((a) => a + index * 4 + 1)),
         );
         destinationTransform = transformer.passThrough<number>();
-        destinationTransforms = [0, 0].map(() => transformer.passThrough<number>());
+        destinationTransforms = range(2).map(() => transformer.passThrough<number>());
     });
 
     describe('pipeOneToOne', () => {
         it('should pass data', async () => {
             plumber.pipeOneToOne(sourceTransform, destinationTransform);
-
-            const result: number[] = [];
-            destinationTransform.on('data', (data) => result.push(data));
-
-            await destinationTransform.promisifyEvents(['end']);
+            const result = await streamToArray(destinationTransform)
             expect(result).toEqual(sourceData);
         });
 
         it('should pass error data', async () => {
             const errorStream = transformer.errorTransform<number>();
-            const source = sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { shouldPushErrorsForward: true }));
+            const source = sourceTransform.pipe(
+                transformer.fromFunction(failOnOddsSync, { shouldPushErrorsForward: true }),
+            );
             plumber.pipeOneToOne(source, destinationTransform, { errorStream });
 
-            const result: number[] = [];
-            const errors: number[] = [];
-            destinationTransform.on('data', (data) => result.push(data));
-            errorStream.on('data', (error) => errors.push(error.data));
-
-            await Promise.all([destinationTransform.promisifyEvents(['end']), errorStream.promisifyEvents(['end'])]);
+            const [result, errors] = await Promise.all([streamToArray(destinationTransform), streamToArray(errorStream)]);
+            const errorData = errors.map(error => (error as StreamError<number>).data)
             expect(result).toEqual([1, 3, 5, 7]);
-            expect(errors).toEqual([2, 4, 6, 8]);
+            expect(errorData).toEqual([2, 4, 6, 8]);
         });
 
         it('should error correctly when not piped to error stream', async () => {
-            const source = sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc));
+            const source = sourceTransform.pipe(transformer.fromFunction(failOnOddsSync));
             plumber.pipeOneToOne(source, destinationTransform);
 
             const promise = Promise.all([
@@ -83,7 +68,9 @@ describe('pipeHelper', () => {
 
         it('should pass error data', async () => {
             const errorStream = transformer.errorTransform<number>();
-            const source = sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { shouldPushErrorsForward: true }));
+            const source = sourceTransform.pipe(
+                transformer.fromFunction(failOnOddsSync, { shouldPushErrorsForward: true }),
+            );
             plumber.pipeOneToMany(source, destinationTransforms, { errorStream });
 
             const result: number[] = [];
@@ -117,7 +104,7 @@ describe('pipeHelper', () => {
         it('should pass error data', async () => {
             const errorStream = transformer.errorTransform<number>();
             const sources = sourceTransforms.map((sourceTransform) =>
-                sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { shouldPushErrorsForward: true })),
+                sourceTransform.pipe(transformer.fromFunction(failOnOddsSync, { shouldPushErrorsForward: true })),
             );
             plumber.pipeManyToOne(sources, destinationTransform, { errorStream });
 
@@ -137,7 +124,7 @@ describe('pipeHelper', () => {
 
         it('should error correctly when not piped to error stream', async () => {
             const sources = sourceTransforms.map((sourceTransform) =>
-                sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc)),
+                sourceTransform.pipe(transformer.fromFunction(failOnOddsSync)),
             );
             plumber.pipeManyToOne(sources, destinationTransform);
             destinationTransform.on('data', () => undefined);
@@ -165,7 +152,7 @@ describe('pipeHelper', () => {
         it('should pass error data', async () => {
             const errorStream = transformer.errorTransform<number>();
             const sources = sourceTransforms.map((sourceTransform) =>
-                sourceTransform.pipe(transformer.fromFunction(errorOnEvenFunc, { shouldPushErrorsForward: true })),
+                sourceTransform.pipe(transformer.fromFunction(failOnOddsSync, { shouldPushErrorsForward: true })),
             );
             plumber.pipeManyToMany(sources, destinationTransforms, { errorStream });
 
@@ -188,8 +175,8 @@ describe('pipeHelper', () => {
     describe('pipe', () => {
         it('should pass data', async () => {
             const layer1 = transformer.passThrough<number>();
-            const layer2 = [0, 1].map(() => transformer.passThrough<number>());
-            const layer3 = [0, 1].map(() => transformer.passThrough<number>());
+            const layer2 = range(2).map(() => transformer.passThrough<number>());
+            const layer3 = range(2).map(() => transformer.passThrough<number>());
             const layer4 = transformer.passThrough<number>();
             plumber.pipe({}, sourceTransform, layer1, layer2, layer3, layer4);
 
@@ -206,8 +193,12 @@ describe('pipeHelper', () => {
             const errorStream = transformer.errorTransform<number>();
 
             const layer1 = transformer.fromFunction(getFailOnNumberFunction(1), { shouldPushErrorsForward: true });
-            const layer2 = [0, 1].map(() => transformer.fromFunction(getFailOnNumberFunction(2), { shouldPushErrorsForward: true }));
-            const layer3 = [0, 1].map(() => transformer.fromFunction(getFailOnNumberFunction(3), { shouldPushErrorsForward: true }));
+            const layer2 = [0, 1].map(() =>
+                transformer.fromFunction(getFailOnNumberFunction(2), { shouldPushErrorsForward: true }),
+            );
+            const layer3 = [0, 1].map(() =>
+                transformer.fromFunction(getFailOnNumberFunction(3), { shouldPushErrorsForward: true }),
+            );
             const layer4 = transformer.fromFunction(getFailOnNumberFunction(4), { shouldPushErrorsForward: true });
             const layer5 = transformer.passThrough<number>();
             plumber.pipe({ errorStream }, sourceTransform, layer1, layer2, layer3, layer4, layer5);
@@ -240,7 +231,9 @@ describe('pipeHelper', () => {
         const errorStream = transformer.errorTransform<number>();
 
         const layer1 = transformer.fromFunction(getFailOnNumberFunction(1), { shouldPushErrorsForward: true });
-        const layer2 = [0, 1].map(() => transformer.fromFunction(getFailOnNumberFunction(2), { shouldPushErrorsForward: true }));
+        const layer2 = [0, 1].map(() =>
+            transformer.fromFunction(getFailOnNumberFunction(2), { shouldPushErrorsForward: true }),
+        );
         const layer3_failing = [0, 1].map(() => transformer.fromFunction(getFailOnNumberFunction(5, 'layer3')));
         const layer4 = transformer.fromFunction(getFailOnNumberFunction(3), { shouldPushErrorsForward: true });
         const layer5 = transformer.passThrough<number>();
