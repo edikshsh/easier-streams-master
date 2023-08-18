@@ -1,14 +1,14 @@
 import { Readable } from 'stream';
-import { SimpleAsyncTransform } from '../../streams/transforms/base/simple-async-transform';
-import { SimpleTransform } from '../../streams/transforms/base/simple-transform';
-import { getStreamPipe } from '../../streams/stream-pipe';
-import {addAsync, filterOutOddsSync, numberToString, range, sleep, streamToArray} from '../helpers-for-tests';
-import { TypedPassThrough } from '../../streams/transforms/utility/typed-pass-through';
-import { transformer } from '../../streams/transformer';
+import { SimpleAsyncTransform } from '../../../streams/transforms/base/simple-async-transform';
+import { SimpleTransform } from '../../../streams/transforms/base/simple-transform';
+import { getStreamPipe } from '../../../streams/stream-pipe';
+import { addAsync, filterOutOddsSync, numberToString, range, sleep, streamToArray } from '../../helpers-for-tests';
+import { TypedPassThrough } from '../../../streams/transforms/utility/typed-pass-through';
+import { transformer } from '../../../streams/transformer';
 
 describe('Stream pipe', () => {
     it('should pipe transforms', async () => {
-        const source = Readable.from(range(8,1)).pipe(new TypedPassThrough<number>({ objectMode: true }));
+        const source = Readable.from(range(8, 1)).pipe(new TypedPassThrough<number>({ objectMode: true }));
         const create3ElementsFrom1 = (n: number) => [n + 1, n + 2, n + 3];
         const takeOnlyFirstElementOfArray = (arr: unknown[]) => arr[0];
         const filterOutOdds = (n: number) => (n % 2 ? undefined : n);
@@ -35,7 +35,7 @@ describe('Stream pipe', () => {
     });
 
     it('should pipe async transforms', async () => {
-        const a = Readable.from(range(8,1)).pipe(new TypedPassThrough<number>({ objectMode: true }));
+        const a = Readable.from(range(8, 1)).pipe(new TypedPassThrough<number>({ objectMode: true }));
 
         const create3ElementsFrom1 = async (n: number) => {
             await sleep(10);
@@ -66,9 +66,7 @@ describe('Stream pipe', () => {
     });
 
     it('should promisify the end of stream correctly', async () => {
-        const source = Readable.from(range(8,1)).pipe(
-            new SimpleTransform((n: number) => n, { objectMode: true }),
-        );
+        const source = Readable.from(range(8, 1)).pipe(new SimpleTransform((n: number) => n, { objectMode: true }));
         const create3ElementsFrom1 = async (n: number) => {
             await sleep(10);
             return [n + 1, n + 2, n + 3];
@@ -100,7 +98,7 @@ describe('Stream pipe', () => {
     });
 
     it('should work', async () => {
-        const source = Readable.from(range(8,1)).pipe(new TypedPassThrough<number>({ objectMode: true }));
+        const source = Readable.from(range(8, 1)).pipe(new TypedPassThrough<number>({ objectMode: true }));
         const create3ElementsFrom1 = (n: number) => [n + 1, n + 2, n + 3];
         const takeOnlyFirstElementOfArray = async (arr: unknown[]) => arr[0];
 
