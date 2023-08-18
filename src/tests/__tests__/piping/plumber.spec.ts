@@ -1,8 +1,14 @@
-import { Plumber, plumber } from '../../streams/plumber';
-import { TypedPassThrough } from '../../streams/transforms/utility/typed-pass-through';
-import { transformer } from '../../streams/transformer';
-import {DEFAULT_ERROR_TEXT, failOnOddsSync, getFailOnNumberFunction, range, streamToArray} from '../helpers-for-tests';
-import {StreamError} from "../../streams/errors/stream-error";
+import { Plumber, plumber } from '../../../streams/plumber';
+import { TypedPassThrough } from '../../../streams/transforms/utility/typed-pass-through';
+import { transformer } from '../../../streams/transformer';
+import {
+    DEFAULT_ERROR_TEXT,
+    failOnOddsSync,
+    getFailOnNumberFunction,
+    range,
+    streamToArray,
+} from '../../helpers-for-tests';
+import { StreamError } from '../../../streams/errors/stream-error';
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;
@@ -14,9 +20,7 @@ describe('pipeHelper', () => {
     beforeEach(() => {
         sourceData = range(8, 1);
         sourceTransform = transformer.fromIterable(sourceData);
-        sourceTransforms = [0, 0].map((_, index) =>
-            transformer.fromIterable(range(4).map((a) => a + index * 4 + 1)),
-        );
+        sourceTransforms = [0, 0].map((_, index) => transformer.fromIterable(range(4).map((a) => a + index * 4 + 1)));
         destinationTransform = transformer.passThrough<number>();
         destinationTransforms = range(2).map(() => transformer.passThrough<number>());
     });
@@ -24,7 +28,7 @@ describe('pipeHelper', () => {
     describe('pipeOneToOne', () => {
         it('should pass data', async () => {
             plumber.pipeOneToOne(sourceTransform, destinationTransform);
-            const result = await streamToArray(destinationTransform)
+            const result = await streamToArray(destinationTransform);
             expect(result).toEqual(sourceData);
         });
 
@@ -35,8 +39,11 @@ describe('pipeHelper', () => {
             );
             plumber.pipeOneToOne(source, destinationTransform, { errorStream });
 
-            const [result, errors] = await Promise.all([streamToArray(destinationTransform), streamToArray(errorStream)]);
-            const errorData = errors.map(error => (error as StreamError<number>).data)
+            const [result, errors] = await Promise.all([
+                streamToArray(destinationTransform),
+                streamToArray(errorStream),
+            ]);
+            const errorData = errors.map((error) => (error as StreamError<number>).data);
             expect(result).toEqual([1, 3, 5, 7]);
             expect(errorData).toEqual([2, 4, 6, 8]);
         });
