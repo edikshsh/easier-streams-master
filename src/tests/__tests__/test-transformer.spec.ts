@@ -1,4 +1,4 @@
-import { Readable } from 'stream';
+import { Readable, Transform } from 'stream';
 import { pipeline } from 'stream/promises';
 import { plumber } from '../../streams/plumber';
 import { transformer } from '../../streams/transformer';
@@ -700,7 +700,7 @@ describe('Test Utility transforms', () => {
             const { input, output } = transformer.async.fromFunctionConcurrent(delayer(delay), concurrency);
 
             const source = transformer.fromIterable(arr);
-            pipeline(source, erroringTransform, input).catch(() => undefined);
+            pipeline(source as Transform, erroringTransform, input).catch(() => undefined);
             pipeline(output, transformer.void()).catch(() => undefined);
 
             output.on('data', (data) => {
@@ -724,8 +724,8 @@ describe('Test Utility transforms', () => {
             const { input, output } = transformer.async.fromFunctionConcurrent(delayer(delay), concurrency, {});
 
             const source = Readable.from(arr);
-            pipeline(source, input).catch(() => undefined);
-            pipeline(output, erroringTransform, passThrough).catch(() => undefined);
+            pipeline(source, input).catch(noop);
+            pipeline(output as Transform, erroringTransform, passThrough).catch(noop);
 
             passThrough.on('data', (data) => {
                 outArr.push(data);
@@ -864,7 +864,7 @@ describe('Test Utility transforms', () => {
             const source = transformer.fromIterable(arr);
 
             const streamDonePromise = concurrentTransform.promisifyEvents('close', 'error');
-            pipeline(source, erroringTransform, concurrentTransform).catch(() => undefined);
+            pipeline(source as Transform, erroringTransform, concurrentTransform).catch(() => undefined);
             await expect(streamDonePromise).rejects.toThrow(DEFAULT_ERROR_TEXT);
         });
 
@@ -881,7 +881,7 @@ describe('Test Utility transforms', () => {
             const source = transformer.fromIterable(arr);
             const p = passThrough.promisifyEvents('close', 'error');
 
-            pipeline(source, concurrentTransform, erroringTransform, passThrough).catch(() => undefined);
+            pipeline(source as Transform, concurrentTransform, erroringTransform, passThrough).catch(noop);
             await expect(p).rejects.toThrow(DEFAULT_ERROR_TEXT);
         });
 
@@ -901,7 +901,7 @@ describe('Test Utility transforms', () => {
             const source = transformer.fromIterable(arr);
             const p = passThrough.promisifyEvents('close', 'error');
 
-            pipeline(source, concurrentTransform, passThrough).catch(() => undefined);
+            pipeline(source as Transform, concurrentTransform, passThrough).catch(noop);
             await expect(p).rejects.toThrow(DEFAULT_ERROR_TEXT);
         });
 
