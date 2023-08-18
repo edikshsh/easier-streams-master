@@ -700,8 +700,8 @@ describe('Test Utility transforms', () => {
             const { input, output } = transformer.async.fromFunctionConcurrent(delayer(delay), concurrency);
 
             const source = transformer.fromIterable(arr);
-            pipeline(source as Transform, erroringTransform, input).catch(() => undefined);
-            pipeline(output, transformer.void()).catch(() => undefined);
+            pipeline(source as Transform, erroringTransform, input).catch(noop);
+            pipeline(output, transformer.void()).catch(noop);
 
             output.on('data', (data) => {
                 outArr.push(data);
@@ -864,7 +864,7 @@ describe('Test Utility transforms', () => {
             const source = transformer.fromIterable(arr);
 
             const streamDonePromise = concurrentTransform.promisifyEvents('close', 'error');
-            pipeline(source as Transform, erroringTransform, concurrentTransform).catch(() => undefined);
+            pipeline(source as Transform, erroringTransform, concurrentTransform).catch(noop);
             await expect(streamDonePromise).rejects.toThrow(DEFAULT_ERROR_TEXT);
         });
 
