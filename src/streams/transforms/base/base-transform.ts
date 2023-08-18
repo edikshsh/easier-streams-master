@@ -81,4 +81,8 @@ export class BaseTransform<TSource, TDestination>
     once(eventName: string | symbol, listener: (...args: unknown[]) => void): this {
         return super.once(eventName, listener);
     }
+
+    [Symbol.asyncIterator](): AsyncIterableIterator<TDestination> {
+        return super[Symbol.asyncIterator]();
+    }
 }
