@@ -3,11 +3,10 @@ import { StreamError } from '../streams/errors/stream-error';
 import { transformer } from '../streams/transformer';
 import { SimpleAsyncTransform } from '../streams/transforms/base/simple-async-transform';
 import { SimpleTransform } from '../streams/transforms/base/simple-transform';
-import { ArrayJoinTransform } from '../streams/transforms/utility/array-join-transform';
-import { ArraySplitTransform } from '../streams/transforms/utility/array-split-transform';
+import { arrayJoinTransform } from '../streams/transforms/utility/array-join-transform';
+import { arraySplitTransform } from '../streams/transforms/utility/array-split-transform';
 import {
     DEFAULT_ERROR_TEXT,
-    filterOutOddsAsync,
     getFailOnNumberAsyncFunction,
     getFailOnNumberFunction,
     sleep,
@@ -18,7 +17,7 @@ describe('Test transforms', () => {
     describe('ArrayJoinTransform', () => {
         it('should join input into arrays of correct length', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6]);
-            const b = a.pipe(new ArrayJoinTransform<number>(3, { objectMode: true }));
+            const b = a.pipe(arrayJoinTransform<number>(3, { objectMode: true }));
 
             const result: number[][] = [];
             b.on('data', (data: number[]) => result.push(data));
@@ -31,7 +30,7 @@ describe('Test transforms', () => {
         });
         it('should flush remaining data even if array is not full', async () => {
             const a = Readable.from([1, 2, 3, 4, 5, 6, 7]);
-            const b = a.pipe(new ArrayJoinTransform<number>(3, { objectMode: true }));
+            const b = a.pipe(arrayJoinTransform<number>(3, { objectMode: true }));
 
             const result: number[][] = [];
             b.on('data', (data: number[]) => result.push(data));
@@ -48,7 +47,7 @@ describe('Test transforms', () => {
                 [4, 5, 6],
                 [7, 8],
             ]);
-            const b = a.pipe(new ArraySplitTransform<number[]>({ objectMode: true }));
+            const b = a.pipe(arraySplitTransform<number[]>({ objectMode: true }));
 
             const result: number[] = [];
             b.on('data', (data: number) => result.push(data));

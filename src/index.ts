@@ -5,8 +5,6 @@ import { getStreamPipe } from './streams/stream-pipe';
 import { plumber, Plumber } from './streams/plumber';
 import { BaseTransform } from './streams/transforms/base/base-transform';
 import { TypedTransform } from './streams/transforms/typed-transform/typed-transform.interface';
-import { ArrayJoinTransform } from './streams/transforms/utility/array-join-transform';
-import { ArraySplitTransform } from './streams/transforms/utility/array-split-transform';
 import {
     callOnDataAsyncTransform,
     callOnDataSyncTransform,
@@ -37,8 +35,6 @@ export {
     SimpleAsyncTransform,
     BaseTransform,
     TypedTransform,
-    ArrayJoinTransform,
-    ArraySplitTransform,
     callOnDataSyncTransform,
     callOnDataAsyncTransform,
     filterTransform,

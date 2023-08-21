@@ -3,7 +3,7 @@ import { FullTransformOptions } from './transforms/types/full-transform-options.
 import { ErrorTransform } from './errors/error-transform';
 import { AsyncTransformFunction } from './transforms/base/simple-async-transform';
 import { TransformFunction } from './transforms/base/simple-transform';
-import { ArraySplitTransform } from './transforms/utility/array-split-transform';
+import { arraySplitTransform } from './transforms/utility/array-split-transform';
 import { callOnDataSyncTransform, callOnDataAsyncTransform } from './transforms/utility/call-on-data-transforms';
 import { voidInputTransform } from './transforms/utility/void-input-transform';
 import { asyncFilterTransform, FilterOptions, filterTransform } from './transforms/utility/filter-transforms';
@@ -15,7 +15,7 @@ import {
 import { fromIterable } from './transforms/utility/from-iterable-transform';
 import { TypedPassThrough } from './transforms/utility/typed-pass-through';
 import { pickElementFromArrayTransform } from './transforms/utility/pick-element-from-array-transform';
-import { ArrayJoinTransform } from './transforms/utility/array-join-transform';
+import { arrayJoinTransform } from './transforms/utility/array-join-transform';
 import { typeFilterTransform } from './transforms/utility/type-filter-transforms';
 import { PlumberOptions } from './utility/plumber-options.type';
 
@@ -41,12 +41,12 @@ export class Transformer extends TransformerBase {
 
     arrayJoin<TSource>(length: number, options?: FullTransformOptions<TSource>) {
         const finalOptions = super.mergeOptions(options);
-        return new ArrayJoinTransform<TSource>(length, finalOptions);
+        return arrayJoinTransform<TSource>(length, finalOptions);
     }
 
     arraySplit<TSource>(options?: FullTransformOptions<TSource[]>) {
         const finalOptions = this.mergeOptions(options);
-        return new ArraySplitTransform<TSource[]>(finalOptions);
+        return arraySplitTransform<TSource[]>(finalOptions);
     }
 
     callOnData<TSource>(functionToCallOnData: (data: TSource) => void, options?: FullTransformOptions<TSource>) {

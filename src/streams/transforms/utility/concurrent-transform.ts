@@ -67,7 +67,7 @@ export class ConcurrentTransform<TSource, TDestination> extends BaseTransform<TS
         const chunkClone = cloneDeep(item);
 
         try {
-            this.push(await this.transformer(item));
+            this.push(await this.transformer(item, this));
             return true;
         } catch (error) {
             this.onWorkerError(error, chunkClone);

@@ -15,13 +15,10 @@ export class SimpleAsyncTransform<TSource, TDestination> extends BaseTransform<T
         super(options);
     }
 
-    async _transform(chunk: TSource, encoding: BufferEncoding, callback: TypedTransformCallback<TDestination>) {
+    _transform(chunk: TSource, encoding: BufferEncoding, callback: TypedTransformCallback<TDestination>) {
         const chunkClone = cloneDeep(chunk);
-        try {
-            const result = await this.transformer(chunk);
-            return callback(null, result);
-        } catch (error) {
-            return onTransformError(this, error, chunkClone,callback,this.options);
-        }
+        this.transformer(chunk, this)
+            .then((result) => callback(null, result))
+            .catch((error) => onTransformError(this, error, chunkClone, callback, this.options));
     }
 }
