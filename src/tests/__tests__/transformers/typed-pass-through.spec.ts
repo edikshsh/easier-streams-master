@@ -1,6 +1,7 @@
 import { Readable } from 'stream';
 import { transformer } from '../../../streams/transformer';
-import { range, streamToArray } from '../../helpers-for-tests';
+import { streamToArray } from '../../../helpers/test-helper';
+import { range } from '../../../helpers/helper-functions';
 
 describe('typedPassThrough', () => {
     it('should pass items correctly', async () => {

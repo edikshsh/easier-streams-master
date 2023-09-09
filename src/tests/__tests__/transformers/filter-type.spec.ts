@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import { transformer } from '../../../streams/transformer';
-import { streamEnd } from '../../helpers-for-tests';
+import { streamEnd } from '../../../helpers/helper-functions';
 
 describe('filterType', () => {
     it('should filter out by type correctly', async () => {

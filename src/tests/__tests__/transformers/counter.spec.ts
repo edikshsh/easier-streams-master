@@ -1,6 +1,7 @@
 import { Readable } from 'stream';
 import { transformer } from '../../../streams/transformer';
-import { filterOutOddsAsync, filterOutOddsSync, range, streamToArray } from '../../helpers-for-tests';
+import { range } from '../../../helpers/helper-functions';
+import { filterOutOddsAsync, filterOutOddsSync, streamToArray } from '../../../helpers/test-helper';
 
 describe('counter', () => {
     describe('sync', () => {
@@ -18,7 +19,6 @@ describe('counter', () => {
 
         it('should count the number of chunks passed correctly', async () => {
             const readable = Readable.from(range(8, 1));
-            // const filterOutOdds = (n: number) => n % 2 === 0;
             const { transform: counterTransform, getCounter } = transformer.counter();
             readable.pipe(counterTransform);
 

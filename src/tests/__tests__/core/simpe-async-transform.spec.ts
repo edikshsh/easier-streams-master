@@ -1,21 +1,27 @@
 import { Readable } from 'stream';
 import { StreamError } from '../../../streams/errors/stream-error';
 import { SimpleAsyncTransform } from '../../../streams/transforms/base/simple-async-transform';
-import { addAsync, DEFAULT_ERROR_TEXT, getFailOnNumberAsyncFunction, streamToArray } from '../../helpers-for-tests';
+import { range } from '../../../helpers/helper-functions';
+import {
+    addAsync,
+    DEFAULT_ERROR_TEXT,
+    getFailOnNumberAsyncFunction,
+    streamToArray,
+} from '../../../helpers/test-helper';
 
 describe('SimpleAsyncTransform', () => {
     it('creates a typed transform from function', async () => {
-        const source = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+        const source = Readable.from(range(8, 1));
         const add1Transform = new SimpleAsyncTransform(addAsync(1), { objectMode: true });
 
         source.pipe(add1Transform);
 
         const result = await streamToArray(add1Transform);
-        expect(result).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+        expect(result).toEqual(range(8, 2));
     });
 
     it('pipes created transforms correctly', async () => {
-        const source = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+        const source = Readable.from(range(8, 1));
         const filterOutOdds = async (n: number) => (n % 2 ? n : undefined);
         const numberToString = async (n: number) => n.toString();
 
@@ -31,7 +37,7 @@ describe('SimpleAsyncTransform', () => {
     });
 
     it('handles non immediate async functions', async () => {
-        const source = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+        const source = Readable.from(range(8, 1));
         const filterOutOdds = async (n: number) => {
             await new Promise((res) => setTimeout(res, 10));
             return n % 2 ? n : undefined;
@@ -50,7 +56,7 @@ describe('SimpleAsyncTransform', () => {
     });
 
     it('formats chunk on errors', async () => {
-        const source = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+        const source = Readable.from(range(8, 1));
         const chunkFormatter = (chunk: number) => ({ num: chunk });
 
         const throwingTransform = new SimpleAsyncTransform(getFailOnNumberAsyncFunction(4), {
@@ -65,8 +71,9 @@ describe('SimpleAsyncTransform', () => {
 
         expect(result).toStrictEqual([1, 2, 3, new StreamError(Error(DEFAULT_ERROR_TEXT), { num: 4 }), 5, 6, 7, 8]);
     });
+
     it('Ignores errors given ignoreErrors true', async () => {
-        const source = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+        const source = Readable.from(range(8, 1));
 
         const throwingTransform = new SimpleAsyncTransform(getFailOnNumberAsyncFunction(4), {
             objectMode: true,
@@ -79,7 +86,7 @@ describe('SimpleAsyncTransform', () => {
     });
 
     it('Ignores errors given ignoreErrors true even when passing error stream', async () => {
-        const source = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+        const source = Readable.from(range(8, 1));
 
         const throwingTransform = new SimpleAsyncTransform(getFailOnNumberAsyncFunction(4), {
             objectMode: true,

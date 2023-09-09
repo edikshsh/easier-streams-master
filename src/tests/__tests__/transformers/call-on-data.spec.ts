@@ -1,6 +1,7 @@
 import { Readable } from 'stream';
 import { transformer } from '../../../streams/transformer';
-import { DEFAULT_ERROR_TEXT, range, sleep, streamToArray } from '../../helpers-for-tests';
+import { range, sleep } from '../../../helpers/helper-functions';
+import { DEFAULT_ERROR_TEXT, streamToArray } from '../../../helpers/test-helper';
 
 describe('callOnData', () => {
     const numberToObject = (n: number) => ({

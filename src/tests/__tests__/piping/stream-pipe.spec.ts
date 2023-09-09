@@ -2,9 +2,10 @@ import { Readable } from 'stream';
 import { SimpleAsyncTransform } from '../../../streams/transforms/base/simple-async-transform';
 import { SimpleTransform } from '../../../streams/transforms/base/simple-transform';
 import { getStreamPipe } from '../../../streams/stream-pipe';
-import { addAsync, filterOutOddsSync, numberToString, range, sleep, streamToArray } from '../../helpers-for-tests';
+import { range, sleep } from '../../../helpers/helper-functions';
 import { TypedPassThrough } from '../../../streams/transforms/utility/typed-pass-through';
 import { transformer } from '../../../streams/transformer';
+import { addAsync, filterOutOddsSync, numberToString, streamToArray } from '../../../helpers/test-helper';
 
 describe('Stream pipe', () => {
     it('should pipe transforms', async () => {

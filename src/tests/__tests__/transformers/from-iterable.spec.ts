@@ -1,5 +1,6 @@
 import { transformer } from '../../../streams/transformer';
-import { range, streamToArray } from '../../helpers-for-tests';
+import { streamToArray } from '../../../helpers/test-helper';
+import { range } from '../../../helpers/helper-functions';
 
 describe('fromIterable', () => {
     it('output all data from iterable', async () => {
@@ -9,6 +10,7 @@ describe('fromIterable', () => {
         const result = await streamToArray(fromIterableTransform);
         expect(result).toEqual(arr);
     });
+
     it('output all data from async generator', async () => {
         function* asyncGenerator() {
             let i = 1;
