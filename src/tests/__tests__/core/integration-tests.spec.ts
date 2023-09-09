@@ -1,11 +1,12 @@
 import { Readable } from 'stream';
 import { SimpleAsyncTransform } from '../../../streams/transforms/base/simple-async-transform';
 import { SimpleTransform } from '../../../streams/transforms/base/simple-transform';
-import { add, numberToStringAsync, sleep, streamToArray } from '../../helpers-for-tests';
+import { range, sleep } from '../../../helpers/helper-functions';
+import { add, numberToStringAsync, streamToArray } from '../../../helpers/test-helper';
 
 describe('integration tests', () => {
     it('Able to mix different transforms in a single stream', async () => {
-        const source = Readable.from([1, 2, 3, 4, 5, 6, 7, 8]);
+        const source = Readable.from(range(8, 1));
 
         const filterOutEvens = async (n: number) => {
             await sleep(10);

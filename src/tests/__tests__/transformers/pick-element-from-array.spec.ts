@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import { transformer } from '../../../streams/transformer';
-import { streamToArray } from '../../helpers-for-tests';
+import { streamToArray } from '../../../helpers/test-helper';
 
 describe('pickElementFromArray', () => {
     it('should pick the correct element', async () => {

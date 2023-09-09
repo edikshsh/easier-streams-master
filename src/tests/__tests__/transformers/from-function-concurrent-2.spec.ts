@@ -2,7 +2,14 @@ import { noop } from 'lodash';
 import { Readable, Transform } from 'stream';
 import { pipeline } from 'stream/promises';
 import { transformer } from '../../../streams/transformer';
-import { DEFAULT_ERROR_TEXT, delayer, delayerMult2, getFailOnNumberAsyncFunctionMult2 } from '../../helpers-for-tests';
+import {
+    DEFAULT_ERROR_TEXT,
+    delayer,
+    delayerMult2,
+    getFailOnNumberAsyncFunctionMult2,
+    streamToArray,
+} from '../../../helpers/test-helper';
+import { eventPromisifier } from '../../../emitters/eventPromisifier';
 
 describe('fromFunctionConcurrent2', () => {
     const errorOn4 = (n: number) => {
@@ -16,21 +23,18 @@ describe('fromFunctionConcurrent2', () => {
         const inputLength = 200;
         const arr = [...Array(inputLength).keys()].map((i) => i + 1);
         const expectedOutput = arr.map((n) => n * 2);
-        const outArr: number[] = [];
-
         const concurrency = 5;
 
         const concurrentTransform = transformer.async.fromFunctionConcurrent2(delayerMult2(delay), concurrency);
 
         Readable.from(arr).pipe(concurrentTransform);
 
-        concurrentTransform.on('data', (data) => {
-            outArr.push(data);
-        });
-        await concurrentTransform.promisifyEvents(['end'], ['error']);
+        const outArr = await streamToArray(concurrentTransform);
+
         outArr.sort((a, b) => a - b);
         expect(outArr).toEqual(expectedOutput);
     });
+
     it('should take less time then running sequentially', async () => {
         const delay = 20;
         const inputLength = 100;
@@ -44,10 +48,12 @@ describe('fromFunctionConcurrent2', () => {
 
         Readable.from(arr).pipe(concurrentTransform);
 
-        concurrentTransform.on('data', noop);
-        await concurrentTransform.promisifyEvents(['end'], ['error']);
+        // concurrentTransform.on('data', noop);
+        // await concurrentTransform.promisifyEvents(['end'], ['error']);
+        await streamToArray(concurrentTransform);
         expect(estimatedRunTimeSequential).toBeGreaterThan(Date.now() - startTime);
     });
+
     it('should send error to output if one of the concurrent actions fails', async () => {
         const delay = 10;
         const inputLength = 100;
@@ -140,9 +146,9 @@ describe('fromFunctionConcurrent2', () => {
         concurrentTransform.on('data', (data) => {
             outArr.push(data);
         });
-        await new Promise<void>((resolve) => readable.on('close', resolve));
+        await eventPromisifier._promisifyEvents(readable, 'close');
         expect(outArr.length).toBeGreaterThan(inputLength - 50);
-        await concurrentTransform.promisifyEvents(['close'], ['error']);
+        await concurrentTransform.promisifyEvents('close', 'error');
         expect(outArr.length).toBe(300);
     });
 });

@@ -1,14 +1,14 @@
 import { Plumber, plumber } from '../../../streams/plumber';
 import { TypedPassThrough } from '../../../streams/transforms/utility/typed-pass-through';
 import { transformer } from '../../../streams/transformer';
+import { noop, range } from '../../../helpers/helper-functions';
+import { StreamError } from '../../../streams/errors/stream-error';
 import {
     DEFAULT_ERROR_TEXT,
     failOnOddsSync,
     getFailOnNumberFunction,
-    range,
     streamToArray,
-} from '../../helpers-for-tests';
-import { StreamError } from '../../../streams/errors/stream-error';
+} from '../../../helpers/test-helper';
 
 describe('pipeHelper', () => {
     let sourceTransform: TypedPassThrough<number>;
@@ -134,7 +134,7 @@ describe('pipeHelper', () => {
                 sourceTransform.pipe(transformer.fromFunction(failOnOddsSync)),
             );
             plumber.pipeManyToOne(sources, destinationTransform);
-            destinationTransform.on('data', () => undefined);
+            destinationTransform.on('data', noop);
 
             const promise = Promise.all([
                 destinationTransform.promisifyEvents(['end'], 'error'),

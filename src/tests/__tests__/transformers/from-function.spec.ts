@@ -1,9 +1,9 @@
-import { noop } from 'lodash';
 import { Readable } from 'stream';
 import { StreamError } from '../../../streams/errors/stream-error';
 import { plumber } from '../../../streams/plumber';
 import { transformer } from '../../../streams/transformer';
-import { add, addAsync, DEFAULT_ERROR_TEXT, range, streamToArray } from '../../helpers-for-tests';
+import { add, addAsync, DEFAULT_ERROR_TEXT, streamToArray } from '../../../helpers/test-helper';
+import { noop, range } from '../../../helpers/helper-functions';
 
 describe('fromFunction', () => {
     describe('sync', () => {
@@ -14,7 +14,7 @@ describe('fromFunction', () => {
             source.pipe(add1Transform);
 
             const result = await streamToArray(add1Transform);
-            expect(result).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+            expect(result).toEqual(range(8, 2));
         });
 
         it('pipes created transforms correctly', async () => {
@@ -66,7 +66,7 @@ describe('fromFunction', () => {
                 streamToArray(errorStream),
             ]);
             const errorExtractedValues = errorResults.map((result) => (result as StreamError<number>).data);
-            expect(result).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+            expect(result).toEqual(range(8, 2));
             expect(errorExtractedValues).toEqual([]);
         });
     });
@@ -79,7 +79,7 @@ describe('fromFunction', () => {
             source.pipe(add1Transform);
 
             const result = await streamToArray(add1Transform);
-            expect(result).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+            expect(result).toEqual(range(8, 2));
         });
 
         it('pipes created transforms correctly', async () => {
@@ -146,15 +146,10 @@ describe('fromFunction', () => {
             plumber.pipeOneToOne(source, add1Transform, { errorStream });
             plumber.pipeOneToOne(add1Transform, voidTransform, { errorStream });
 
-            // const result: number[] = [];
-            // const errorResulst: number[] = [];
-            // add1Transform.on('data', (data) => result.push(data));
-            // errorStream.on('data', (data) => errorResulst.push(data.data));
             const [result, errorResult] = await Promise.all([streamToArray(add1Transform), streamToArray(errorStream)]);
 
-            // await Promise.all([streamEnd(add1Transform), streamEnd(errorStream)]);
             const errorValues = errorResult.map((error) => (error as StreamError<number>).data);
-            expect(result).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+            expect(result).toEqual(range(8, 2));
             expect(errorValues).toEqual([]);
         });
     });

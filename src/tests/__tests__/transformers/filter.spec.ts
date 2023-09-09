@@ -1,14 +1,8 @@
 import { Readable } from 'stream';
 import { plumber } from '../../../streams/plumber';
 import { transformer } from '../../../streams/transformer';
-import {
-    DEFAULT_ERROR_TEXT,
-    filterOutOddsSync,
-    filterOutOddsAsync,
-    range,
-    streamEnd,
-    streamToArray,
-} from '../../helpers-for-tests';
+import { range, streamEnd } from '../../../helpers/helper-functions';
+import { DEFAULT_ERROR_TEXT, filterOutOddsAsync, filterOutOddsSync, streamToArray } from '../../../helpers/test-helper';
 
 describe('filter', () => {
     describe('sync', () => {
@@ -124,9 +118,7 @@ describe('filter', () => {
             };
 
             const filterTransform = transformer.async.filter(filterOutOdds, { shouldPushErrorsForward: true });
-            // const result: number[] = [];
             const errors: number[] = [];
-            // passThrough.on('data', (data: number) => result.push(data));
             errorStream.on('data', (error) => {
                 errors.push(error.data);
             });

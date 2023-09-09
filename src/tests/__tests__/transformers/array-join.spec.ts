@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
+import { streamToArray } from '../../../helpers/test-helper';
 import { arrayJoinTransform } from '../../../streams/transforms/utility/array-join-transform';
-import { streamToArray } from '../../helpers-for-tests';
 
 describe('ArrayJoinTransform', () => {
     it('should join input into arrays of correct length', async () => {

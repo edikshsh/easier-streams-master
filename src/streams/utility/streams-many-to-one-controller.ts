@@ -13,7 +13,6 @@ export function streamsManyToOneController(
     eventCounter = getDefaultEventCounter(),
 ) {
     const concurrency = inputLayer.length;
-    // eventCounter.error = inputLayer.length - 1;
     for (const event in eventCounter) {
         inputLayer.forEach((input) => {
             input.once(event, (data) => {
@@ -31,6 +30,6 @@ export function getDefaultEventCounter(): Partial<StreamGroupControllerEventCoun
         close: 0,
         end: 0,
         finish: 0,
-        error: 0
+        error: 0,
     };
 }

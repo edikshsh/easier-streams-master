@@ -1,16 +1,7 @@
-import {Stream, Transform} from 'stream';
+import { Transform } from 'stream';
 import { BaseTransform } from '../streams/transforms/base/base-transform';
+import { sleep } from './helper-functions';
 
-export async function sleep(n: number) {
-    return new Promise((res) => setTimeout(res, n));
-}
-
-export async function streamEnd(stream: Stream) {
-    return new Promise((res, rej) => {
-        stream.on('close', res);
-        stream.on('error', rej);
-    });
-}
 export function getFailOnNumberFunction(input: number, errorText = DEFAULT_ERROR_TEXT) {
     return (num: number) => {
         if (num === input) {
@@ -93,11 +84,9 @@ export function filterOutOddsAsync(delay?: number) {
     };
 }
 
-export function noop(...args: any[]) {
-    return undefined;
-}
-
-export async function streamToArray<TSource, TDestination>(transform: BaseTransform<TSource, TDestination> | Transform) {
+export async function streamToArray<TSource, TDestination>(
+    transform: BaseTransform<TSource, TDestination> | Transform,
+) {
     const arr: TDestination[] = [];
     for await (const chunk of transform) {
         arr.push(chunk);
@@ -112,10 +101,5 @@ export function numberToString(n: number) {
 export async function numberToStringAsync(n: number) {
     return numberToString(n);
 }
-
-export function range(len: number, start = 0){
-    return [...new Array(len)].map(() => start++)
-}
-
 
 export const DEFAULT_ERROR_TEXT = 'asdf';
